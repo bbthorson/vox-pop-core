@@ -1,0 +1,58 @@
+{
+    "lexicon": 1,
+    "id": "com.voxpop.reply",
+    "defs": {
+        "main": {
+            "type": "record",
+            "description": "A Vox Pop reply record. Represents an audio response to a prompt.",
+            "key": "tid",
+            "record": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "promptId",
+                    "authorId",
+                    "audioUrl",
+                    "createdAt"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Unique identifier for the reply."
+                    },
+                    "promptId": {
+                        "type": "string",
+                        "description": "The canonical identifier (URI or ID) of the prompt being replied to."
+                    },
+                    "authorId": {
+                        "type": "string",
+                        "description": "The unique identifier (DID or Firebase UID) of the replier."
+                    },
+                    "audioUrl": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "The URL to the high-quality audio recording of the reply."
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "datetime",
+                        "description": "The timestamp when the reply was created."
+                    },
+                    "status": {
+                        "type": "string",
+                        "knownValues": [
+                            "live",
+                            "archived"
+                        ],
+                        "default": "live",
+                        "description": "The current lifecycle status of the reply."
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Private text notes added by the prompt author about this reply."
+                    }
+                }
+            }
+        }
+    }
+}
