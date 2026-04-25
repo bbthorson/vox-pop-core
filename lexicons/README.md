@@ -22,7 +22,7 @@ Maps to our `PromptRecord`.
 | :--- | :--- | :--- | :--- |
 | `title` | string | `PromptRecord.title` | Required. |
 | `description` | string | `PromptRecord.description` | Optional. |
-| `audio` | blob | `PromptRecord.audio` (`BlobRef`) | Maps to an AT Proto blob (CID). The transformation emits `audio: null` when the record has no `BlobRef` yet — apps/web's publisher must call `repo.uploadBlob` first to obtain a CID. |
+| `audio` | blob | `PromptRecord.audio` (`BlobRef`) | Maps to an AT Proto blob (CID). The transformation **omits the `audio` field entirely** when the record has no `BlobRef` yet (AT Proto lexicons treat optional fields as absent vs. present — `null` is not a valid value). Apps/web's publisher must call `repo.uploadBlob` first to obtain a CID and augment the record. |
 | `createdAt` | datetime | `PromptRecord.createdAt` | ISO 8601 string. |
 | `status` | string | `PromptRecord.status` | Enums: `live`, `archived`. The internal `deleted` state is filtered (or defensively mapped to `archived`) by the transformation. |
 

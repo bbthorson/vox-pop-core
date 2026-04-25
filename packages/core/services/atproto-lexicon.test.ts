@@ -50,9 +50,10 @@ describe('promptRecordToLexicon', () => {
         });
     });
 
-    it('emits audio: null when the record has no BlobRef', () => {
+    it('omits audio when the record has no BlobRef (AT Proto requires absent, not null)', () => {
         const result = promptRecordToLexicon(makePrompt());
-        expect(result.audio).toBeNull();
+        expect(result.audio).toBeUndefined();
+        expect(result).not.toHaveProperty('audio');
     });
 
     it('omits the description key entirely when not present', () => {

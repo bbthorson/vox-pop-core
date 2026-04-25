@@ -24,8 +24,12 @@ export interface PromptLexiconRecord {
     $type: typeof NSID.Prompt;
     title: string;
     description?: string;
-    /** `null` when the record has no `BlobRef` yet — see TODO in `blobRefToLexicon`. */
-    audio: LexiconBlob | null;
+    /**
+     * Omitted when the record has no `BlobRef` yet — see TODO in
+     * `blobRefToLexicon`. AT Protocol lexicons treat optional fields as
+     * absent vs. present; `null` is not a valid lexicon value.
+     */
+    audio?: LexiconBlob;
     createdAt: string;
     status: 'live' | 'archived';
 }
@@ -43,8 +47,9 @@ export interface ProfileLexiconRecord {
 }
 
 /**
- * Convert a `BlobRef` (storage shape) into the lexicon wire shape, or `null`
- * when the record carries no blob.
+ * Convert a `BlobRef` (storage shape) into the lexicon wire shape, or
+ * `undefined` when the record carries no blob (so the caller can omit the
+ * field entirely — AT Protocol lexicons don't model `null` as a value).
  *
  * TODO(blob-cid-migration): During the `audioUrl` → `audio: BlobRef` migration,
  * `BlobRef.ref` may transiently hold a Firebase Storage URL instead of a real
@@ -52,8 +57,8 @@ export interface ProfileLexiconRecord {
  * augment the record before invoking `promptRecordToLexicon` — this function
  * passes whatever `ref` is present straight through.
  */
-function blobRefToLexicon(blob: BlobRef | undefined): LexiconBlob | null {
-    if (!blob) return null;
+function blobRefToLexicon(blob: BlobRef | undefined): LexiconBlob | undefined {
+    if (!blob) return undefined;
     return {
         $type: 'blob',
         ref: { $link: blob.ref },
@@ -81,13 +86,17 @@ export function promptRecordToLexicon(record: PromptRecord): PromptLexiconRecord
     const out: PromptLexiconRecord = {
         $type: NSID.Prompt,
         title: record.title,
-        audio: blobRefToLexicon(record.audio),
         createdAt: toIsoString(record.createdAt),
         status,
     };
 
     if (record.description) {
         out.description = record.description;
+    }
+
+    const audio = blobRefToLexicon(record.audio);
+    if (audio) {
+        out.audio = audio;
     }
 
     return out;
