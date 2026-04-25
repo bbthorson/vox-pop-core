@@ -1,0 +1,63 @@
+# Firebase App Hosting config for the core-api backend.
+#
+# Lives at the repo root so App Hosting can find package-lock.json and run
+# `npm ci` from the workspace root before the framework adapter focuses on
+# the app at `apps/core-api/`. This mirrors the apps/web pattern in the
+# private monorepo.
+#
+# The `apps/core-api/apphosting.yaml` in this repo is shadowed by this file
+# at deploy time and kept only for documentation parity with the private
+# monorepo's source tree.
+
+rootDirectory: apps/core-api
+
+runConfig:
+    # min=0 is fine for a solo-user deployment; revisit if we get real traffic.
+    minInstances: 0
+    # Cloud Run requires startupProbe.timeoutSeconds <= periodSeconds. Total
+    # startup window = failureThreshold × periodSeconds = 300s (5 min), which
+    # is plenty for Node + Hono + Firebase Admin cold starts.
+    startupProbe:
+        timeoutSeconds: 10
+        periodSeconds: 30
+        failureThreshold: 10
+    livenessProbe:
+        failureThreshold: 10
+
+# Environment + secrets.
+#
+# Sharing credentials with apps/web for now per specs/decoupling-migration.md
+# § Post-4a Follow-ups ("Split service accounts"). When that follow-up lands,
+# core-api gets its own secrets with narrower IAM scopes.
+#
+# Naming convention: no `NEXT_PUBLIC_*` prefix here — that's a Next.js thing;
+# core-api is a plain Node service. Variables pull from the same Secret
+# Manager entries apps/web uses.
+env:
+    - variable: FIREBASE_PROJECT_ID
+      secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      availability:
+          - BUILD
+          - RUNTIME
+    - variable: FIREBASE_STORAGE_BUCKET
+      secret: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+      availability:
+          - BUILD
+          - RUNTIME
+    - variable: ADMIN_SERVICE_ACCOUNT_JSON
+      secret: ADMIN_SERVICE_ACCOUNT_JSON
+      availability:
+          - BUILD
+          - RUNTIME
+    - variable: GCLOUD_PROJECT
+      value: "vox-pop-simple"
+      availability:
+          - RUNTIME
+    - variable: NODE_ENV
+      value: "production"
+      availability:
+          - RUNTIME
+    - variable: LOG_LEVEL
+      value: "info"
+      availability:
+          - RUNTIME
