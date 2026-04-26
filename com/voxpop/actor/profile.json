@@ -1,0 +1,32 @@
+{
+    "lexicon": 1,
+    "id": "com.voxpop.actor.profile",
+    "defs": {
+        "main": {
+            "type": "record",
+            "description": "A Vox Pop creator profile. One record per actor at the well-known `self` rkey, mirroring the `app.bsky.actor.profile` convention.",
+            "key": "literal:self",
+            "record": {
+                "type": "object",
+                "properties": {
+                    "handle": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 20,
+                        "description": "Public handle (e.g. `brad`). Distinct from the AT Protocol handle, which lives on the actor's identity."
+                    },
+                    "usageIntent": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "description": "Stated intent of the creator (e.g. `Podcaster`, `Listener`)."
+                    },
+                    "rssFeed": {
+                        "type": "string",
+                        "format": "uri",
+                        "description": "External podcast feed URL associated with this creator. Today this lives on the user's primary organization, not the user record itself; publishers must source it explicitly."
+                    }
+                }
+            }
+        }
+    }
+}
