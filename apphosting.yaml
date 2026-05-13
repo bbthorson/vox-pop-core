@@ -61,3 +61,11 @@ env:
       value: "info"
       availability:
           - RUNTIME
+    # CORS allowlist for browser-direct calls. Comma-separated full origins
+    # (with scheme). Mirrors apps/core-api/apphosting.yaml in the private
+    # monorepo, which is shadowed by this file at deploy time. See
+    # apps/core-api/src/app.ts:parseAllowedOrigins for the parser.
+    - variable: ALLOWED_ORIGINS
+      value: "https://voxpop.phonicfactory.com,https://vox-pop--vox-pop-simple.us-east4.hosted.app,https://vox-pop-core-api--vox-pop-simple.us-east4.hosted.app,http://localhost:9002"
+      availability:
+          - RUNTIME
