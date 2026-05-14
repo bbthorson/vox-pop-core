@@ -12,7 +12,7 @@
       "trailingSlash": false,
       "headers": [
         {
-          "source": "**/*.@(js|css|svg|woff2)",
+          "source": "_astro/**",
           "headers": [
             {
               "key": "Cache-Control",
