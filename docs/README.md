@@ -1,12 +1,12 @@
-# Starlight Starter Kit: Basics
+# Vox Pop Core Documentation
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+This directory contains the source for the [Vox Pop Core](https://docs.phonicfactory.com) documentation site, built with [Astro Starlight](https://starlight.astro.build/).
 
-```
-npm create astro@latest -- --template starlight
-```
+## Local Development
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+1. Install dependencies: `npm install`
+2. Start the dev server: `npm run dev`
+3. Build for production: `npm run build`
 
 ## 🚀 Project Structure
 
