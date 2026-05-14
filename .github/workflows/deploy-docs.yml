@@ -14,30 +14,100 @@ on:
       - '.firebaserc'
       - '.github/workflows/deploy-docs.yml'
 
+# `id-token: write` is what makes Workload Identity Federation work — the
+# job mints a short-lived OIDC token that google-github-actions/auth
+# exchanges for federated GCP credentials. No long-lived service account
+# key ever leaves Google Cloud.
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: docs/package-lock.json
-      - name: Install docs deps
+
+      - name: Install + build docs
         working-directory: docs
-        run: npm ci
-      - name: Build docs
-        working-directory: docs
-        run: npm run build
-      - name: Deploy to Firebase Hosting (preview on PR, live on push)
-        uses: FirebaseExtended/action-hosting-deploy@v0
+        run: |
+          npm ci
+          npm run build
+
+      # OIDC → GCP token exchange. Sets up Application Default Credentials
+      # so firebase-tools (next step) authenticates without ever seeing a
+      # JSON key. Required GitHub secrets:
+      #   GCP_WIF_PROVIDER  — full resource name of the WIF provider
+      #   GCP_DEPLOY_DOCS_SA — email of the deploy service account
+      - id: gcp_auth
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE }}
-          channelId: ${{ github.event_name == 'push' && 'live' || '' }}
-          projectId: vox-pop-simple
-          target: docs
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_DOCS_SA }}
+
+      - name: Deploy to Firebase Hosting
+        id: deploy
+        env:
+          # firebase-tools picks up ADC from the auth step's exported
+          # GOOGLE_APPLICATION_CREDENTIALS file automatically.
+          IS_PUSH: ${{ github.event_name == 'push' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$IS_PUSH" = "true" ]; then
+            echo "Deploying to live channel..."
+            npx --yes firebase-tools deploy \
+              --only hosting:docs \
+              --project vox-pop-simple \
+              --non-interactive
+          else
+            CHANNEL_ID="pr-${PR_NUMBER}"
+            echo "Deploying to preview channel: ${CHANNEL_ID}"
+            npx --yes firebase-tools hosting:channel:deploy "${CHANNEL_ID}" \
+              --only docs \
+              --project vox-pop-simple \
+              --expires 7d \
+              --non-interactive \
+              --json > /tmp/firebase-deploy.json
+            URL=$(jq -r '.result.docs.url' /tmp/firebase-deploy.json)
+            echo "preview_url=${URL}" >> "$GITHUB_OUTPUT"
+            echo "Preview URL: ${URL}"
+          fi
+
+      - name: Comment preview URL on PR
+        if: github.event_name == 'pull_request' && steps.deploy.outputs.preview_url
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deploy.outputs.preview_url }}';
+            const body = `📖 **Docs preview deployed**\n\n${url}\n\n_Preview channel expires in 7 days._`;
+            // Replace any existing preview comment from this workflow on the same PR.
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            const previous = comments.find(c =>
+              c.user.type === 'Bot' && c.body.startsWith('📖 **Docs preview deployed**')
+            );
+            if (previous) {
+              await github.rest.issues.updateComment({
+                comment_id: previous.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body,
+              });
+            }
