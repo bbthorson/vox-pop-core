@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "vox-pop-simple"
+  },
+  "targets": {
+    "vox-pop-simple": {
+      "hosting": {
+        "docs": [
+          "vox-pop-docs"
+        ]
+      }
+    }
+  }
+}

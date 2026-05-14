@@ -1,0 +1,38 @@
+---
+title: Vox Pop Core
+description: Open-source core of Vox Pop — audio interaction infrastructure.
+template: splash
+hero:
+  tagline: MIT-licensed Hono service for audio replies, prompts, and identity. The same engine that powers voxpop.com.
+  actions:
+    - text: Quick start
+      link: /self-hosting/quick-start/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/bbthorson/vox-pop-core
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What's here
+
+<CardGrid>
+	<Card title="What is Vox Pop Core?" icon="information">
+		An overview of the open-core surface and what it does. [Read more →](/introduction/overview/)
+	</Card>
+	<Card title="Architecture" icon="setting">
+		How the Hono service is wired and where the service-binding seams live. [Read more →](/introduction/architecture/)
+	</Card>
+	<Card title="Self-host it" icon="rocket">
+		Run the open core against your own Firebase project. [Quick start →](/self-hosting/quick-start/)
+	</Card>
+	<Card title="API reference" icon="document">
+		Every `/api/v1/*` endpoint, generated from the Zod schemas. [Browse →](/api/overview/)
+	</Card>
+</CardGrid>
+
+## What's intentionally not here
+
+The hosted product at [voxpop.com](https://voxpop.com) adds IVR / call-forwarding, embed widgets, and team features. Those live in a separate closed-source layer and aren't part of this open core.
