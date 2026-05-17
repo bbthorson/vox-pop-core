@@ -14,7 +14,7 @@ import type {
     OrgInviteRecord,
 } from 'shared/types/records';
 import type { PromptDocument } from 'shared/types/storage';
-import type { RssSummary } from './rss';
+import type { RssSummary } from '../services/rss';
 
 // Re-export so other core files (and apps/web) can reach RssSummary via
 // the contract module without also importing ./rss directly.
