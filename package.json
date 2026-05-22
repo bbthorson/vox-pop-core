@@ -1,0 +1,33 @@
+{
+  "name": "@vox-pop/embed",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vox Pop embed — standalone Vite + React SPA serving the chrome-less prompt iframe. Cross-origin from apps/web; hits apps/core-api directly. Deploys as static assets to Firebase Hosting at embed.phonicfactory.com.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@fontsource/arvo": "^5.1.0",
+    "@fontsource/rubik": "^5.1.0",
+    "@vox-pop/design-tokens": "*",
+    "@vox-pop/embed-ui": "*",
+    "@vox-pop/shared": "*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0"
+  }
+}
