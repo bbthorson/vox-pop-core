@@ -1,0 +1,43 @@
+{
+  "name": "@vox-pop/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vox Pop design tokens — CSS variables, TS constants, and the shared Tailwind preset consumed by apps/web (Next.js) and apps/embed (Vite, future).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tokens.css": "./src/tokens.css",
+    "./tokens": {
+      "import": "./dist/tokens.js",
+      "types": "./dist/tokens.d.ts"
+    },
+    "./tailwind-preset": {
+      "import": "./dist/tailwind-preset.js",
+      "types": "./dist/tailwind-preset.d.ts"
+    },
+    "./fonts": {
+      "import": "./dist/fonts.js",
+      "types": "./dist/fonts.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src/tokens.css"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepare": "tsc"
+  },
+  "peerDependencies": {
+    "tailwindcss": "^3"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.2"
+  }
+}
