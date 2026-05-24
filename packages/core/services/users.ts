@@ -161,4 +161,23 @@ export class UserService {
     async getAllPublicHandles(): Promise<string[]> {
         return this.deps.listAllHandles();
     }
+
+    /**
+     * Remove the linked AT Protocol identity from a user's profile.
+     * Thin wrapper around the dep call — kept on the service for parity
+     * with other write methods and so callers can stay on the service
+     * surface rather than reaching into deps directly.
+     */
+    async disconnectAtproto(uid: string): Promise<void> {
+        await this.deps.removeBlueskyIdentity(uid);
+    }
+
+    /**
+     * Write the AT Protocol identity to a user's profile after a
+     * successful OAuth callback. Called by the system-auth endpoint
+     * that apps/web's `/api/v1/atproto/callback` route hits post-flow.
+     */
+    async setBlueskyIdentity(uid: string, identity: { handle: string; did: string }): Promise<void> {
+        await this.deps.setBlueskyIdentity(uid, identity);
+    }
 }
