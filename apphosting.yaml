@@ -69,3 +69,14 @@ env:
       value: "https://voxpop.phonicfactory.com,https://vox-pop--vox-pop-simple.us-east4.hosted.app,https://vox-pop-core-api--vox-pop-simple.us-east4.hosted.app,http://localhost:9002"
       availability:
           - RUNTIME
+    # Shared secret for sibling-service auth — apps/web (and eventually
+    # apps/telephony) authenticate to /api/v1/system/* with this. Verified
+    # by apps/core-api/src/middleware/system-auth.ts. Mirrors the binding
+    # in apps/core-api/apphosting.yaml on the private monorepo. Must stay
+    # in sync there — this root file shadows the apps/core-api one at
+    # deploy time, so additions/changes to the secret config need to land
+    # here, not just there.
+    - variable: SYSTEM_AUTH_TOKEN
+      secret: SYSTEM_AUTH_TOKEN
+      availability:
+          - RUNTIME
