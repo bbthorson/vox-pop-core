@@ -1,0 +1,46 @@
+{
+  "name": "@vox-pop/embed-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vox Pop embed-tier UI — composed React components used by BOTH apps/web's public pages AND apps/embed (Vite, future). Framework-portable: no Next.js imports, no Firebase imports, no apps/web-specific paths. Auth + uploader + nav adapters arrive via props (ports).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./ports": {
+      "import": "./dist/ports.js",
+      "types": "./dist/ports.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepare": "if command -v tsc >/dev/null 2>&1; then tsc; fi",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "dependencies": {
+    "@vox-pop/design-tokens": "*",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.15.0",
+    "lucide-react": "^0.470.0",
+    "tailwind-merge": "^2.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}
