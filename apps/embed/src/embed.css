@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — CSS custom properties for :root, .dark,
+   .theme-editorial, .dark .theme-editorial. Shared with apps/web.
+   See `packages/design-tokens/src/tokens.css`. */
+@import '@vox-pop/design-tokens/tokens.css';
+
+/* @fontsource/* sets font-family on `.rubik` / `.arvo` selectors but
+   doesn't define the `--font-rubik` / `--font-arvo` CSS variables the
+   Tailwind preset references. Wire them up here so `font-sans` and
+   `font-heading` resolve to the right families. */
+:root {
+    --font-rubik:
+        'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-arvo: 'Arvo', Georgia, serif;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    html,
+    body,
+    #root {
+        height: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-family: var(--font-rubik);
+        font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04';
+        margin: 0;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-arvo);
+    }
+}
