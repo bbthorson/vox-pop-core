@@ -31,7 +31,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "prepare": "tsc"
+    "prepare": "if command -v tsc >/dev/null 2>&1; then tsc; fi"
   },
   "peerDependencies": {
     "tailwindcss": "^3"
