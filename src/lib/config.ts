@@ -34,3 +34,25 @@ export const CORE_API_BASE_URL: string = stripTrailingSlash(
 export const HOST_APP_BASE_URL: string = stripTrailingSlash(
     env.VITE_HOST_APP_BASE_URL ?? 'http://localhost:9002',
 );
+
+/**
+ * Wraps a raw Firebase Storage URL through the core-api audio proxy
+ * (`GET /api/v1/audio?url=...`), which 302s to a short-lived signed
+ * URL. Pairs with apps/web's `getAudioProxyUrl` in
+ * `apps/web/src/config/dashboard.ts` and apps/mobile's helper.
+ *
+ * Idempotent — passing an already-proxied URL returns it unchanged.
+ * Defends against future call-site bugs where a proxy URL gets passed
+ * back through. (Caught one such bug in apps/mobile's `handleShareAudio`
+ * during the Phase 2 rollout — the helper guards against the next one.)
+ *
+ * Phase 2 of `specs/signed-url-migration.md` — every audio playback
+ * site routes through this so the eventual `storage.rules` lockdown
+ * doesn't break `<audio>` tags. The embed runs anonymous; the proxy
+ * doesn't require auth, so the redirect works for unauthenticated
+ * playback.
+ */
+export function getAudioProxyUrl(audioUrl: string): string {
+    if (audioUrl.includes('/api/v1/audio?url=')) return audioUrl;
+    return `${CORE_API_BASE_URL}/api/v1/audio?url=${encodeURIComponent(audioUrl)}`;
+}

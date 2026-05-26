@@ -10,7 +10,7 @@ import {
 } from '@vox-pop/embed-ui';
 import type { ProfileView, PromptView } from 'shared/types';
 
-import { CORE_API_BASE_URL, HOST_APP_BASE_URL } from './lib/config';
+import { CORE_API_BASE_URL, HOST_APP_BASE_URL, getAudioProxyUrl } from './lib/config';
 
 /**
  * Parse `{handle, promptId}` from the URL.
@@ -158,7 +158,7 @@ function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) 
                         >
                             {prompt.record.audioUrl ? (
                                 <ListenDot
-                                    audioUrl={prompt.record.audioUrl}
+                                    audioUrl={getAudioProxyUrl(prompt.record.audioUrl)}
                                     peaks={prompt.record.waveformPeaks}
                                 />
                             ) : (
