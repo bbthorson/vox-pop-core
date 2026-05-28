@@ -15,7 +15,8 @@
     "start": "node apps/core-api/dist/index.js"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0"
   },
   "engines": {
     "node": ">=22"
