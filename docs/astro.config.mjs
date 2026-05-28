@@ -31,6 +31,11 @@ export default defineConfig({
 					label: 'API reference',
 					items: [
 						{ label: 'Overview', slug: 'api/overview' },
+						// Live Scalar-rendered endpoint reference. Standalone
+						// Astro page (src/pages/api/reference.astro) outside
+						// Starlight content because Scalar needs the full
+						// viewport to render its own sidebar/nav.
+						{ label: 'Endpoint reference', link: '/api/reference/' },
 					],
 				},
 			],
