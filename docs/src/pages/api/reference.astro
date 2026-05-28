@@ -47,8 +47,14 @@
                     title: 'Vox Pop Core API',
                 },
             })}></script>
+        <!--
+            Scalar CDN bundle pinned to a specific version. Bumping is a
+            deliberate review act — verify the new release renders the
+            spec without regressions, then update both the URL and the
+            version note in `docs/README.md` (when added).
+        -->
         <script
             is:inline
-            src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+            src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.57.5"></script>
     </body>
 </html>

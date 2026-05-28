@@ -3,7 +3,7 @@ title: API reference
 description: The /api/v1/* endpoints exposed by Vox Pop Core.
 ---
 
-The full per-endpoint reference lives at **[/api/reference](/api/reference)** — a Scalar-rendered view of the live OpenAPI spec generated from `apps/core-api`'s Zod schemas.
+The full per-endpoint reference lives at **[/api/reference](/api/reference/)** — a Scalar-rendered view of the live OpenAPI spec generated from `apps/core-api`'s Zod schemas.
 
 This page covers the high-level shape of the surface and the auth + envelope conventions every endpoint follows.
 
