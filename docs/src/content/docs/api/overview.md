@@ -3,13 +3,22 @@ title: API reference
 description: The /api/v1/* endpoints exposed by Vox Pop Core.
 ---
 
-:::note
-The full per-endpoint reference is generated from the Zod schemas at `apps/core-api/src/routes/*.ts` and rendered here via [Scalar](https://scalar.com/). This page is a placeholder while that integration lands.
-:::
+The full per-endpoint reference lives at **[/api/reference](/api/reference/)** — a Scalar-rendered view of the live OpenAPI spec generated from `apps/core-api`'s Zod schemas.
+
+This page covers the high-level shape of the surface and the auth + envelope conventions every endpoint follows.
 
 ## What's covered
 
-Every endpoint in this reference lives in **`apps/core-api`** — the open-core service. The hosted product (`voxpop.com`) adds IVR, embed-widget, and team endpoints that are **not** documented here.
+Every endpoint in the reference lives in **`apps/core-api`** — the open-core service. The hosted product (`voxpop.com`) adds IVR, embed-widget, telephony, and team-management endpoints that are **not** documented here.
+
+Public scope (the four core resources):
+
+- **`/users`** — Profile read, current-user write, organization memberships, handle claim/availability.
+- **`/prompts`** — Prompt CRUD, status lifecycle, replies-on-prompt, legacy public-prompt lookup.
+- **`/replies`** — Reply CRUD, paginated feed, full-text search, notes, bulk actions.
+- **`/auth`** — AT Protocol identity disconnect.
+
+Internal/utility routes (audio transport, RSS parsing, handle resolution, system-auth glue) intentionally stay out of the public reference — they're either origin-coupled or service-to-service plumbing a third-party client wouldn't call.
 
 ## Authentication
 
@@ -19,22 +28,31 @@ All non-public endpoints require a bearer token in the `Authorization` header:
 Authorization: Bearer <id_token_or_session_cookie>
 ```
 
-`core-api` accepts both Firebase ID tokens (mobile, embed, browser) and Firebase session cookie values (server-side rendered apps). See [`apps/core-api/src/middleware/auth.ts`](https://github.com/bbthorson/vox-pop-core/blob/main/apps/core-api/src/middleware/auth.ts) for the verification logic.
+`core-api` accepts both Firebase ID tokens (mobile, embed, browser) and Firebase session cookie values (server-side rendered apps) interchangeably. See [`apps/core-api/src/middleware/auth.ts`](https://github.com/bbthorson/vox-pop-core/blob/main/apps/core-api/src/middleware/auth.ts) for the verification logic.
 
-## Endpoint families
+Public endpoints accept missing/invalid tokens and project the response to a public-safe shape.
 
-The current surface (22+ endpoints) is grouped by resource:
+## Envelope
 
-- **`/users`** — Profile read, current-user write, organization lookups.
-- **`/prompts`** — Prompt CRUD, lifecycle, public read.
-- **`/replies`** — Reply CRUD, search, bulk actions, notes.
-- **`/organizations`** — Org read, member management, profile context.
-- **`/handles`** — Handle availability and claim.
-- **`/onboarding`** — RSS import for new users.
-- **`/uploads`** — Pending audio upload coordination.
-- **`/inbox`** — Owner-facing unread/replier feed.
-- **`/notifications`** — Push token register / disable.
-- **`/people`** — Cross-prompt people view (CRM-style).
-- **`/audio`** — Signed-URL audio access.
+Every JSON response wraps its payload:
 
-The auto-generated reference (coming soon) will list every endpoint with parameters, response shape, and example requests.
+- **Success:** `{ success: true, data: T }`
+- **Failure:** `{ success: false, error: { message, code?, issues? }, requestId }`
+
+Paginated lists nest the cursor inside `data`:
+
+```json
+{
+    "success": true,
+    "data": {
+        "items": [...],
+        "nextCursor": "the-id-of-the-last-item-or-null"
+    }
+}
+```
+
+The `requestId` correlation ID appears in every error response and as the `X-Request-ID` response header on every request — propagate it from your client (`X-Request-ID: <uuid>`) for end-to-end tracing across `core-api`, the hosted dashboard, and Cloud Functions logs.
+
+## Source of truth
+
+The reference is generated at build time from the Zod request/response schemas declared in [`apps/core-api/src/adapters/inbound/rest/*.ts`](https://github.com/bbthorson/vox-pop-core/tree/main/apps/core-api/src/adapters/inbound/rest). When a route's contract changes there, `npm run gen:openapi -w @vox-pop/core-api` regenerates `openapi.json` and this site rebuilds.

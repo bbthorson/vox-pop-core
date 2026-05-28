@@ -3,6 +3,12 @@ dist/
 # generated types
 .astro/
 
+# Generated artifact — copied from ../apps/core-api/openapi.json at
+# build time by scripts/copy-openapi.mjs. Not committed; source of
+# truth lives in the private repo and reaches this repo via the
+# subtree sync workflow.
+public/openapi.json
+
 # dependencies
 node_modules/
 

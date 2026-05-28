@@ -3,11 +3,11 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
+    "dev": "node scripts/copy-openapi.mjs && astro dev",
+    "start": "node scripts/copy-openapi.mjs && astro dev",
+    "build": "node scripts/copy-openapi.mjs --strict && astro build",
     "preview": "astro preview",
-    "deploy": "astro build && cd .. && firebase deploy --only hosting:docs",
+    "deploy": "npm run build && cd .. && firebase deploy --only hosting:docs",
     "astro": "astro"
   },
   "dependencies": {
