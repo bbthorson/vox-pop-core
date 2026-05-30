@@ -255,8 +255,25 @@ export function ReplyDot({
     }, [audioBlob, creatorHandle, promptId, coreApiBaseUrl, hostAppBaseUrl]);
 
     // ─── On-site path: existing direct-upload + authenticated reply ─────────
+    //
+    // Bug 2 from `specs/drafts/post-roadmap-followups.md` was "authenticated
+    // reply on public pages — button just doesn't respond." Root cause:
+    // every early-return below pre-fix either silently returned OR awaited
+    // `getToken(true)` BEFORE flipping to the `sending` phase, leaving the
+    // user staring at the same `review` UI with no feedback for 1–3 seconds
+    // (or forever, on the silent paths). This rewrite flips `sending`
+    // IMMEDIATELY so the user gets the spinner the instant they tap Send,
+    // and converts every silent-return path into a visible error string.
     const submitReply = useCallback(async () => {
-        if (!audioBlob) return;
+        if (!audioBlob) {
+            // Audio was somehow cleared between record and submit — rare,
+            // but if it happens, surface the state instead of doing
+            // nothing. Pre-fix this was a silent `return` and the user
+            // saw no response to their tap (Bug 2 root cause #1).
+            setError('Recording lost. Please record again.');
+            setPhase('review');
+            return;
+        }
         if (!auth || !uploader || !authGate) {
             // Programming error — on-domain submit was triggered without
             // the required adapters. Embed mode never reaches here
@@ -266,21 +283,48 @@ export function ReplyDot({
             return;
         }
 
-        // Verify we can get a token before switching to sending phase.
-        const token = await auth.authenticatedApi.getToken(true);
-        if (!token) {
-            setError('Not authenticated. Please sign in and try again.');
-            setPhase('review');
-            return;
-        }
-
+        // Flip to `sending` BEFORE the token round-trip so the user sees
+        // the spinner immediately, not after 1–3s of perceived dead air.
+        // If anything below fails we revert to `review` with the error.
         setPhase('sending');
         setError(null);
         authGate.dismissAuth();
 
+        // Token retrieval — `forceRefresh: false` (the default). Firebase
+        // Auth auto-refreshes the cached ID token ~5 minutes before expiry,
+        // so for any user on the page less than ~55 minutes the cached
+        // token is valid. The 401-retry path in `authenticatedApi` is the
+        // only legitimate force-refresh case; paying it on every submit
+        // adds 200ms–3s of perceived latency for no benefit (see
+        // `specs/drafts/auth-hardening.md` § Step 4). Originally written
+        // as `getToken(true)` on the assumption that "a write is worth
+        // the round-trip" — Gemini correctly pushed back on #515.
+        //
+        // The `.catch()` is still here because `getIdToken()` can throw
+        // on a transient refresh failure (rare for cached tokens, but
+        // possible during refresh-window contention). Converting the
+        // throw to `null` keeps the error path in the value position
+        // (consistent with the rest of the flow).
+        const token = await auth.authenticatedApi.getToken(false).catch((err) => {
+            console.error('Token retrieval failed:', err);
+            return null;
+        });
+        if (!token) {
+            // "Refresh the page" rather than "sign in again" — `auth.user`
+            // is likely still populated in React state, so `needsAuth()`
+            // would return false on the next tap and we'd loop right back
+            // here. A page refresh forces a re-hydration that re-evaluates
+            // sign-in state. Step 5 of the auth-hardening migration will
+            // make this surface a proper "sign out then sign in" recovery;
+            // for now, the explicit refresh instruction unblocks the user.
+            setError('Session expired. Please refresh the page and sign in again.');
+            setPhase('review');
+            return;
+        }
+
         try {
             const currentUser = auth.authService?.currentUser;
-            if (!currentUser) throw new Error('Not authenticated');
+            if (!currentUser) throw new Error('Session lost during submit. Please sign in again.');
             const storagePath = uploader.getReplyStoragePath(promptId, currentUser.uid);
             const result = await uploader.uploadAudio(audioBlob, storagePath);
 
@@ -305,7 +349,12 @@ export function ReplyDot({
     submitReplyRef.current = submitReply;
 
     const handleAccept = useCallback(async () => {
-        if (!audioBlob) return;
+        if (!audioBlob) {
+            // See submitReply for why this used to be a silent `return`.
+            setError('Recording lost. Please record again.');
+            setPhase('review');
+            return;
+        }
 
         // Embed: hand off to voxpop.com via the pending-upload flow.
         if (isEmbed) {
