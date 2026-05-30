@@ -414,12 +414,17 @@ export function ReplyDot({
 
             <AnimatePresence mode="wait">
 
-                {/* IDLE — Mic button */}
+                {/* IDLE — Mic button.
+                    Bug 4 — primary actions across all three phases
+                    (idle/recording/review-send) sized to w-20 h-20 (80px)
+                    so the central control doesn't jump as the phase
+                    changes. Was w-16 h-16 (64px); felt undersized
+                    against the cap-18rem desktop dot. */}
                 {phase === 'idle' && (
                     <motion.button
                         key="idle"
                         onClick={handleTapToRecord}
-                        className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
@@ -431,7 +436,7 @@ export function ReplyDot({
                             animate={{ y: [0, -3, 0] }}
                             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                         >
-                            <Mic className="h-7 w-7" />
+                            <Mic className="h-9 w-9" />
                         </motion.span>
                     </motion.button>
                 )}
@@ -447,12 +452,12 @@ export function ReplyDot({
                     >
                         <motion.button
                             onClick={handleStop}
-                            className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                            className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="Stop recording"
                         >
-                            <Square className="h-5 w-5 fill-current" />
+                            <Square className="h-7 w-7 fill-current" />
                         </motion.button>
                         <span className="text-xs text-muted-foreground">Recording...</span>
                     </motion.div>
@@ -468,41 +473,41 @@ export function ReplyDot({
                         exit={{ opacity: 0, scale: 0.9 }}
                     >
                         <div className="flex items-center gap-3">
-                            {/* Play/pause preview */}
+                            {/* Play/pause preview — secondary, w-12 h-12 (was w-10 h-10) */}
                             <motion.button
                                 onClick={handlePlayback}
-                                className="w-10 h-10 rounded-full border-2 border-border bg-card flex items-center justify-center"
+                                className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={isPlayingBack ? 'Pause preview' : 'Play preview'}
                             >
                                 {isPlayingBack ? (
-                                    <Pause className="h-4 w-4 text-muted-foreground" />
+                                    <Pause className="h-5 w-5 text-muted-foreground" />
                                 ) : (
-                                    <Play className="h-4 w-4 text-muted-foreground ml-0.5" />
+                                    <Play className="h-5 w-5 text-muted-foreground ml-0.5" />
                                 )}
                             </motion.button>
 
-                            {/* Accept — primary action, centered */}
+                            {/* Accept — primary action, centered, matches idle/recording size */}
                             <motion.button
                                 onClick={handleAccept}
-                                className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                                className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={`Send reply to ${hostName}`}
                             >
-                                <Send className="h-6 w-6" />
+                                <Send className="h-8 w-8" />
                             </motion.button>
 
-                            {/* Discard (X) */}
+                            {/* Discard (X) — secondary, matches play preview size */}
                             <motion.button
                                 onClick={handleDiscard}
-                                className="w-10 h-10 rounded-full border-2 border-border bg-card flex items-center justify-center"
+                                className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label="Discard recording"
                             >
-                                <X className="h-4 w-4 text-muted-foreground" />
+                                <X className="h-5 w-5 text-muted-foreground" />
                             </motion.button>
                         </div>
 
