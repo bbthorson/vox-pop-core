@@ -443,24 +443,19 @@ export function ReplyDot({
 
                 {/* RECORDING — Stop button only (blob handles visualization) */}
                 {phase === 'recording' && (
-                    <motion.div
+                    <motion.button
                         key="recording"
-                        className="flex flex-col items-center gap-2"
+                        onClick={handleStop}
+                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        aria-label="Stop recording"
                     >
-                        <motion.button
-                            onClick={handleStop}
-                            className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            aria-label="Stop recording"
-                        >
-                            <Square className="h-7 w-7 fill-current" />
-                        </motion.button>
-                        <span className="text-xs text-muted-foreground">Recording...</span>
-                    </motion.div>
+                        <Square className="h-7 w-7 fill-current" />
+                    </motion.button>
                 )}
 
                 {/* REVIEW — Play, Submit (primary), Discard */}
@@ -539,13 +534,12 @@ export function ReplyDot({
                 {phase === 'sending' && (
                     <motion.div
                         key="sending"
-                        className="flex flex-col items-center gap-3"
+                        className="flex items-center justify-center"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                     >
                         <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                        <span className="text-xs text-muted-foreground">Sending...</span>
                     </motion.div>
                 )}
 
