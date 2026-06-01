@@ -1,5 +1,6 @@
-import { Hono } from 'hono';
+import { OpenAPIHono } from '@hono/zod-openapi';
 import { cors } from 'hono/cors';
+import { OPENAPI_INFO } from './lib/openapi-info.js';
 import { requestId } from './middleware/request-id.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { resolveRoute } from './adapters/inbound/rest/resolve.js';
@@ -27,6 +28,7 @@ import { callForwardingLookupRoute } from './adapters/inbound/rest/call-forwardi
 import { rateLimitCheckRoute } from './adapters/inbound/rest/rate-limit-check.js';
 import { atprotoRoute } from './adapters/inbound/rest/atproto.js';
 import { systemAtprotoStateRoute } from './adapters/inbound/rest/system-atproto-state.js';
+import { systemAtprotoSessionRoute } from './adapters/inbound/rest/system-atproto-session.js';
 import { systemAuthMintRoute } from './adapters/inbound/rest/system-auth-mint.js';
 import { systemBlueskyIdentityRoute } from './adapters/inbound/rest/system-bluesky-identity.js';
 
@@ -71,8 +73,8 @@ export function parseAllowedOrigins(raw: string | undefined = process.env.ALLOWE
  *      from handlers AND from middleware (rate-limit, request-id).
  */
 
-export function app(): Hono {
-    const a = new Hono();
+export function app(): OpenAPIHono {
+    const a = new OpenAPIHono();
 
     // 1. Request ID — before everything so downstream middleware and
     //    the error handler can bind it to log lines.
@@ -156,10 +158,18 @@ export function app(): Hono {
     a.route('/api/v1/system/rate-limit', rateLimitCheckRoute);
     a.route('/api/v1/atproto', atprotoRoute);
     a.route('/api/v1/system/atproto-state', systemAtprotoStateRoute);
+    a.route('/api/v1/system/atproto-session', systemAtprotoSessionRoute);
     a.route('/api/v1/system/auth', systemAuthMintRoute);
     a.route('/api/v1/system/users', systemBlueskyIdentityRoute);
 
-    // 5. Error handler — last, via `onError` so it catches throws from
+    // 5. OpenAPI document — served at `/openapi.json`. Only routes
+    //    registered via `app.openapi(createRoute(...), handler)` appear
+    //    in the spec. Public-doc scope: `/users`, `/prompts`, `/replies`,
+    //    `/auth`. Transport/utility/system routes intentionally stay
+    //    plain-Hono. See `specs/drafts/openapi-generation.md`.
+    a.doc('/openapi.json', { openapi: '3.0.0', info: OPENAPI_INFO });
+
+    // 6. Error handler — last, via `onError` so it catches throws from
     //    any middleware or handler above.
     a.onError(errorHandler);
 
