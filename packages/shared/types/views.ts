@@ -207,7 +207,6 @@ export const PromptViewSchema = z.object({
         reason: z.string().optional(),
     }).optional(),
     // AI Enrichment Fields (Hydrated from Record but hidden from Record Schema)
-    aiScore: z.number().optional(),
     aiLabels: z.array(z.string()).optional(),
     aiSummary: z.string().optional(),
     aiStatus: z.enum(['pending', 'complete', 'error']).optional(),
@@ -230,7 +229,6 @@ export type PromptView = z.infer<typeof PromptViewSchema>;
 export const PromptViewPublicSchema = PromptViewSchema.omit({
     analytics: true,
     moderation: true,
-    aiScore: true,
     aiLabels: true,
     aiSummary: true,
     aiStatus: true,
@@ -254,7 +252,7 @@ export type PromptViewPublic = z.infer<typeof PromptViewPublicSchema>;
  */
 export function toPromptViewPublic(prompt: PromptView): PromptViewPublic {
     /* eslint-disable @typescript-eslint/no-unused-vars */
-    const { analytics, moderation, aiScore, aiLabels, aiSummary, aiStatus, aiError, transcription, ...rest } = prompt;
+    const { analytics, moderation, aiLabels, aiSummary, aiStatus, aiError, transcription, ...rest } = prompt;
     /* eslint-enable @typescript-eslint/no-unused-vars */
     // Delegate author projection to `toProfileViewBasic` — it owns the
     // public-vs-private gates (notably `showBlueskyPublicly`). Manual
@@ -287,7 +285,6 @@ export const ReplyViewSchema = z.object({
         reason: z.string().optional(),
     }).optional(),
     // AI Enrichment Fields (Hydrated from Record but hidden from Record Schema)
-    aiScore: z.number().optional(),
     aiLabels: z.array(z.string()).optional(),
     aiSummary: z.string().optional(),
     aiStatus: z.enum(['pending', 'complete', 'error', 'skipped_too_short']).optional(),
@@ -297,6 +294,25 @@ export const ReplyViewSchema = z.object({
     /** Must match the widened enum in `ReplyRecordSchema.energyLevel`. */
     energyLevel: z.enum(['High', 'Low', 'Neutral']).optional(),
     engagementScore: z.number().min(1).max(10).optional(),
+    // === Voice-isolation enrichment (lifted; see specs/ai-enrichment-split.md) ===
+    //
+    // `enhancedAudioUrl` is the only one of these the public view keeps —
+    // it replaces `audioUrl` for downstream players when present.
+    // `enhancedStoragePath` is private (storage paths are server-side
+    // bookkeeping).
+    enhancedAudioUrl: z.string().url().optional(),
+    enhancedStoragePath: z.string().optional(),
+    // === Social-share video enrichment (lifted; creator-only) ===
+    //
+    // All `socialVideo*` fields are stripped by `toReplyViewPublic` —
+    // the URL points at a generated artifact the creator may share to
+    // social media, NOT at content the reply page should render. Status /
+    // error / source-audio are job-tracking state.
+    socialVideoUrl: z.string().url().optional(),
+    socialVideoStoragePath: z.string().optional(),
+    socialVideoStatus: z.enum(['pending', 'complete', 'error']).optional(),
+    socialVideoError: z.string().optional(),
+    socialVideoSourceAudio: z.string().optional(),
     /** @private Confirmed listener phone number (never exposed publicly) */
     listenerPhoneNumber: z.string().regex(/^\+[1-9]\d{1,14}$/).optional(),
     /**
@@ -310,15 +326,46 @@ export const ReplyViewSchema = z.object({
 export type ReplyView = z.infer<typeof ReplyViewSchema>;
 
 /**
- * Public-safe ReplyView schema — strips PII and author-private CRM fields.
- * Use this for ALL client-facing API responses. Keep ReplyView for internal/service use only.
+ * Public-safe ReplyView schema — strips PII, author-private CRM, and
+ * paid-tier AI fields. Use this for ALL client-facing API responses
+ * served to non-author viewers. Keep ReplyView for internal/service use
+ * and for the prompt author's own dashboard.
  *
- * Note: listenerPhoneNumber is not currently populated during hydration, but this schema
- * provides defense-in-depth in case Firestore documents contain the field from SIP/phone flows.
+ * Strip groups (see `specs/ai-enrichment-split.md` § 2):
+ * - PII: `listenerPhoneNumber`
+ * - Author-private CRM: `notes`
+ * - AI enrichment (private cluster): everything except `transcription`.
+ *   Transcription IS public — it's shown on the public reply detail page,
+ *   in RSS item descriptions, and as video subtitles.
+ * - Voice isolation: keep `enhancedAudioUrl` (used as primary audio for
+ *   downstream players when present), strip `enhancedStoragePath` (server-
+ *   side bookkeeping).
+ * - Social-video: strip the entire cluster. The URL points at a creator-
+ *   only generated artifact; the reply page does NOT render it.
+ *
+ * Note: `listenerPhoneNumber` is not currently populated during hydration,
+ * but the omit provides defense-in-depth in case Firestore documents
+ * carry the field from SIP/phone flows.
  */
 export const ReplyViewPublicSchema = ReplyViewSchema.omit({
     listenerPhoneNumber: true,
     notes: true,
+    // AI cluster — only `transcription` survives.
+    aiStatus: true,
+    aiError: true,
+    aiSummary: true,
+    aiLabels: true,
+    sentiment: true,
+    energyLevel: true,
+    engagementScore: true,
+    // Voice isolation — keep enhancedAudioUrl, strip the path.
+    enhancedStoragePath: true,
+    // Social-video — entire cluster is creator-only.
+    socialVideoUrl: true,
+    socialVideoStoragePath: true,
+    socialVideoStatus: true,
+    socialVideoError: true,
+    socialVideoSourceAudio: true,
 });
 export type ReplyViewPublic = z.infer<typeof ReplyViewPublicSchema>;
 
@@ -326,13 +373,34 @@ export type ReplyViewPublic = z.infer<typeof ReplyViewPublicSchema>;
  * Strips private fields from a ReplyView, returning a client-safe object.
  * Works on plain objects (does not re-validate with Zod for performance).
  *
- * Strips top-level CRM fields (listenerPhoneNumber, notes). `notes` is the
- * prompt-author's private annotation lifted from the enrichments namespace
- * — never visible to non-authors.
+ * See `ReplyViewPublicSchema` above for the field-by-field rationale.
+ * The destructure list MUST stay in lockstep with the schema's `omit`
+ * list — drift means a field gets typed as stripped but isn't.
  */
 export function toReplyViewPublic(reply: ReplyView): ReplyViewPublic {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { listenerPhoneNumber, notes, ...publicReply } = reply;
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    const {
+        listenerPhoneNumber,
+        notes,
+        // AI cluster (only transcription stays public)
+        aiStatus,
+        aiError,
+        aiSummary,
+        aiLabels,
+        sentiment,
+        energyLevel,
+        engagementScore,
+        // Voice isolation (only enhancedAudioUrl stays public)
+        enhancedStoragePath,
+        // Social-video (entire cluster is creator-only)
+        socialVideoUrl,
+        socialVideoStoragePath,
+        socialVideoStatus,
+        socialVideoError,
+        socialVideoSourceAudio,
+        ...publicReply
+    } = reply;
+    /* eslint-enable @typescript-eslint/no-unused-vars */
     return publicReply as ReplyViewPublic;
 }
 

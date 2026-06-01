@@ -173,6 +173,13 @@ export type PromptRecord = z.infer<typeof PromptRecordSchema>;
 
 /**
  * The raw reply data stored in Firestore.
+ *
+ * AI-derived fields (transcription, sentiment, engagement score, voice
+ * isolation, social-share video, etc.) live on `ReplyEnrichmentRecord`
+ * at `enrichments/replies/items/{id}` — see § 1 of
+ * `specs/ai-enrichment-split.md`. Only ingestion-time outputs that a
+ * self-hoster without paid AI still needs (waveform peaks + audio
+ * duration) remain on the canonical doc.
  */
 export const ReplyRecordSchema = z.object({
     /** Unique Reply ID */
@@ -194,40 +201,22 @@ export const ReplyRecordSchema = z.object({
      * - `deleted`: Soft deleted.
      */
     status: z.enum(['live', 'archived', 'deleted']).default('live'),
-    /** AI Enrichment Fields */
-    aiStatus: z.enum(['pending', 'complete', 'error', 'skipped_too_short']).optional(),
-    aiError: z.string().optional(),
-    aiSummary: z.string().optional(),
-    aiLabels: z.array(z.string()).optional(),
-    transcription: z.string().optional(),
-    sentiment: z.enum(['Positive', 'Negative', 'Neutral']).optional(),
     /**
-     * AI-assigned energy level. Spec says `High | Low`, but Gemini also
-     * returns `Neutral` for flat-affect replies (e.g. a short "Perfect.").
-     * Widened to three-way so `ReplyRecordSchema.safeParse` in
-     * [replies-dependencies.ts:70](../../apps/web/src/services/replies-dependencies.ts)
-     * stops silently dropping those replies out of the people list.
-     * Consumers (mobile + dashboard) already render anything-not-`High` as a
-     * neutral chip. Long-term: sanitize the AI output in
-     * `functions/src/services/aiService.ts` rather than widening further.
+     * Pre-computed waveform peaks (normalized 0–1) for instant audio
+     * visualization. **Stays on canonical** (does NOT move to the
+     * enrichment doc) — produced by a plain ffmpeg pass at ingestion,
+     * not an AI step; a self-hoster without paid-tier AI still needs
+     * this on every reply for the audio player. See
+     * `specs/ai-enrichment-split.md` § 5.
      */
-    energyLevel: z.enum(['High', 'Low', 'Neutral']).optional(),
-    engagementScore: z.number().min(1).max(10).optional(),
-    /** URL to noise-reduced audio (ElevenLabs Voice Isolation, paid tiers only) */
-    enhancedAudioUrl: z.string().url().optional(),
-    /** Storage path for enhanced audio */
-    enhancedStoragePath: z.string().optional(),
-    /** Pre-computed waveform peaks (normalized 0–1) for instant audio visualization */
     waveformPeaks: z.array(z.number()).optional(),
-    /** Duration of the audio in seconds, computed server-side from ffmpeg. */
+    /**
+     * Duration of the audio in seconds, computed server-side from
+     * ffmpeg. **Stays on canonical** (same reasoning as `waveformPeaks`
+     * above — ingestion ffmpeg output, not an AI enrichment). See
+     * `specs/ai-enrichment-split.md` § 5.
+     */
     audioDurationSec: z.number().optional(),
-    /** Social Share Video Fields */
-    socialVideoUrl: z.string().url().optional(),
-    socialVideoStoragePath: z.string().optional(),
-    socialVideoStatus: z.enum(['pending', 'complete', 'error']).optional(),
-    socialVideoError: z.string().optional(),
-    /** The audio URL/path used to generate the current video (for cache invalidation) */
-    socialVideoSourceAudio: z.string().optional(),
 });
 export type ReplyRecord = z.infer<typeof ReplyRecordSchema>;
 
@@ -245,6 +234,43 @@ export const ReplyEnrichmentRecordSchema = z.object({
     id: z.string(),
     /** Private notes by the prompt author about this reply. */
     notes: z.string().optional(),
+
+    // === AI-enrichment fields (sole source of truth post Stage 4) ===
+    //
+    // These lifted off canonical in Stage 4 of `specs/ai-enrichment-split.md`.
+    // Writers (`functions/`) route AI updates here via the split-write
+    // helper in `functions/src/services/replyEnrichmentDualWrite.ts`;
+    // readers source them via the hydrator's enrichment branch (see
+    // `packages/core/services/hydration.ts`).
+
+    // --- AI core (Gemini-generated) ---
+    aiStatus: z.enum(['pending', 'complete', 'error', 'skipped_too_short']).optional(),
+    aiError: z.string().optional(),
+    aiSummary: z.string().optional(),
+    aiLabels: z.array(z.string()).optional(),
+    transcription: z.string().optional(),
+    sentiment: z.enum(['Positive', 'Negative', 'Neutral']).optional(),
+    /** Must match the widened enum in `ReplyRecordSchema.energyLevel`. */
+    energyLevel: z.enum(['High', 'Low', 'Neutral']).optional(),
+    engagementScore: z.number().min(1).max(10).optional(),
+
+    // --- Voice isolation (ElevenLabs, paid tier) ---
+    /** Noise-reduced audio URL — replaces `audioUrl` for downstream players when present. PUBLIC. */
+    enhancedAudioUrl: z.string().url().optional(),
+    /** Storage path companion to `enhancedAudioUrl` — private. */
+    enhancedStoragePath: z.string().optional(),
+
+    // --- Social-share video (paid tier) ---
+    //
+    // All `socialVideo*` fields are creator-only. The URL points at the
+    // generated artifact (a video file the creator can download and post
+    // to social media); the reply detail page does NOT render it.
+    socialVideoUrl: z.string().url().optional(),
+    socialVideoStoragePath: z.string().optional(),
+    socialVideoStatus: z.enum(['pending', 'complete', 'error']).optional(),
+    socialVideoError: z.string().optional(),
+    /** The audio URL/path used to generate the current video (for cache invalidation). */
+    socialVideoSourceAudio: z.string().optional(),
 });
 export type ReplyEnrichmentRecord = z.infer<typeof ReplyEnrichmentRecordSchema>;
 
