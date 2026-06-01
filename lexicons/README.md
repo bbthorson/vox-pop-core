@@ -14,6 +14,10 @@ These lexicons are part of the **open-core** surface — protocol definitions th
 
 The pure record-to-lexicon transformation lives in [`packages/core/services/atproto-lexicon.ts`](../packages/core/services/atproto-lexicon.ts). The PDS I/O (`repo.uploadBlob`, `repo.putRecord`) lives in apps/web alongside the OAuth client — see `specs/4c-atproto-prompts.md` in the upstream private repo for the full split rationale.
 
+Future lexicons under consideration:
+
+- **`com.voxpop.people.contact`** + `com.voxpop.people.*` RPC namespace — for the eventual `apps/identity/` contact-directory surface. Prior-art survey and proposed shape in [`specs/people-lexicon-prior-art.md`](../specs/people-lexicon-prior-art.md). Not yet authored; gated on `apps/identity/` actually being on the roadmap.
+
 ## 1. com.voxpop.audio.prompt
 
 Maps to our `PromptRecord`.
