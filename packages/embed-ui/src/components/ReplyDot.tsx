@@ -255,8 +255,25 @@ export function ReplyDot({
     }, [audioBlob, creatorHandle, promptId, coreApiBaseUrl, hostAppBaseUrl]);
 
     // ─── On-site path: existing direct-upload + authenticated reply ─────────
+    //
+    // Bug 2 from `specs/drafts/post-roadmap-followups.md` was "authenticated
+    // reply on public pages — button just doesn't respond." Root cause:
+    // every early-return below pre-fix either silently returned OR awaited
+    // `getToken(true)` BEFORE flipping to the `sending` phase, leaving the
+    // user staring at the same `review` UI with no feedback for 1–3 seconds
+    // (or forever, on the silent paths). This rewrite flips `sending`
+    // IMMEDIATELY so the user gets the spinner the instant they tap Send,
+    // and converts every silent-return path into a visible error string.
     const submitReply = useCallback(async () => {
-        if (!audioBlob) return;
+        if (!audioBlob) {
+            // Audio was somehow cleared between record and submit — rare,
+            // but if it happens, surface the state instead of doing
+            // nothing. Pre-fix this was a silent `return` and the user
+            // saw no response to their tap (Bug 2 root cause #1).
+            setError('Recording lost. Please record again.');
+            setPhase('review');
+            return;
+        }
         if (!auth || !uploader || !authGate) {
             // Programming error — on-domain submit was triggered without
             // the required adapters. Embed mode never reaches here
@@ -266,21 +283,48 @@ export function ReplyDot({
             return;
         }
 
-        // Verify we can get a token before switching to sending phase.
-        const token = await auth.authenticatedApi.getToken(true);
-        if (!token) {
-            setError('Not authenticated. Please sign in and try again.');
-            setPhase('review');
-            return;
-        }
-
+        // Flip to `sending` BEFORE the token round-trip so the user sees
+        // the spinner immediately, not after 1–3s of perceived dead air.
+        // If anything below fails we revert to `review` with the error.
         setPhase('sending');
         setError(null);
         authGate.dismissAuth();
 
+        // Token retrieval — `forceRefresh: false` (the default). Firebase
+        // Auth auto-refreshes the cached ID token ~5 minutes before expiry,
+        // so for any user on the page less than ~55 minutes the cached
+        // token is valid. The 401-retry path in `authenticatedApi` is the
+        // only legitimate force-refresh case; paying it on every submit
+        // adds 200ms–3s of perceived latency for no benefit (see
+        // `specs/drafts/auth-hardening.md` § Step 4). Originally written
+        // as `getToken(true)` on the assumption that "a write is worth
+        // the round-trip" — Gemini correctly pushed back on #515.
+        //
+        // The `.catch()` is still here because `getIdToken()` can throw
+        // on a transient refresh failure (rare for cached tokens, but
+        // possible during refresh-window contention). Converting the
+        // throw to `null` keeps the error path in the value position
+        // (consistent with the rest of the flow).
+        const token = await auth.authenticatedApi.getToken(false).catch((err) => {
+            console.error('Token retrieval failed:', err);
+            return null;
+        });
+        if (!token) {
+            // "Refresh the page" rather than "sign in again" — `auth.user`
+            // is likely still populated in React state, so `needsAuth()`
+            // would return false on the next tap and we'd loop right back
+            // here. A page refresh forces a re-hydration that re-evaluates
+            // sign-in state. Step 5 of the auth-hardening migration will
+            // make this surface a proper "sign out then sign in" recovery;
+            // for now, the explicit refresh instruction unblocks the user.
+            setError('Session expired. Please refresh the page and sign in again.');
+            setPhase('review');
+            return;
+        }
+
         try {
             const currentUser = auth.authService?.currentUser;
-            if (!currentUser) throw new Error('Not authenticated');
+            if (!currentUser) throw new Error('Session lost during submit. Please sign in again.');
             const storagePath = uploader.getReplyStoragePath(promptId, currentUser.uid);
             const result = await uploader.uploadAudio(audioBlob, storagePath);
 
@@ -305,7 +349,12 @@ export function ReplyDot({
     submitReplyRef.current = submitReply;
 
     const handleAccept = useCallback(async () => {
-        if (!audioBlob) return;
+        if (!audioBlob) {
+            // See submitReply for why this used to be a silent `return`.
+            setError('Recording lost. Please record again.');
+            setPhase('review');
+            return;
+        }
 
         // Embed: hand off to voxpop.com via the pending-upload flow.
         if (isEmbed) {
@@ -365,12 +414,17 @@ export function ReplyDot({
 
             <AnimatePresence mode="wait">
 
-                {/* IDLE — Mic button */}
+                {/* IDLE — Mic button.
+                    Bug 4 — primary actions across all three phases
+                    (idle/recording/review-send) sized to w-20 h-20 (80px)
+                    so the central control doesn't jump as the phase
+                    changes. Was w-16 h-16 (64px); felt undersized
+                    against the cap-18rem desktop dot. */}
                 {phase === 'idle' && (
                     <motion.button
                         key="idle"
                         onClick={handleTapToRecord}
-                        className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
@@ -382,7 +436,7 @@ export function ReplyDot({
                             animate={{ y: [0, -3, 0] }}
                             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                         >
-                            <Mic className="h-7 w-7" />
+                            <Mic className="h-9 w-9" />
                         </motion.span>
                     </motion.button>
                 )}
@@ -398,12 +452,12 @@ export function ReplyDot({
                     >
                         <motion.button
                             onClick={handleStop}
-                            className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                            className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="Stop recording"
                         >
-                            <Square className="h-5 w-5 fill-current" />
+                            <Square className="h-7 w-7 fill-current" />
                         </motion.button>
                         <span className="text-xs text-muted-foreground">Recording...</span>
                     </motion.div>
@@ -419,41 +473,41 @@ export function ReplyDot({
                         exit={{ opacity: 0, scale: 0.9 }}
                     >
                         <div className="flex items-center gap-3">
-                            {/* Play/pause preview */}
+                            {/* Play/pause preview — secondary, w-12 h-12 (was w-10 h-10) */}
                             <motion.button
                                 onClick={handlePlayback}
-                                className="w-10 h-10 rounded-full border-2 border-border bg-card flex items-center justify-center"
+                                className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={isPlayingBack ? 'Pause preview' : 'Play preview'}
                             >
                                 {isPlayingBack ? (
-                                    <Pause className="h-4 w-4 text-muted-foreground" />
+                                    <Pause className="h-5 w-5 text-muted-foreground" />
                                 ) : (
-                                    <Play className="h-4 w-4 text-muted-foreground ml-0.5" />
+                                    <Play className="h-5 w-5 text-muted-foreground ml-0.5" />
                                 )}
                             </motion.button>
 
-                            {/* Accept — primary action, centered */}
+                            {/* Accept — primary action, centered, matches idle/recording size */}
                             <motion.button
                                 onClick={handleAccept}
-                                className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                                className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label={`Send reply to ${hostName}`}
                             >
-                                <Send className="h-6 w-6" />
+                                <Send className="h-8 w-8" />
                             </motion.button>
 
-                            {/* Discard (X) */}
+                            {/* Discard (X) — secondary, matches play preview size */}
                             <motion.button
                                 onClick={handleDiscard}
-                                className="w-10 h-10 rounded-full border-2 border-border bg-card flex items-center justify-center"
+                                className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label="Discard recording"
                             >
-                                <X className="h-4 w-4 text-muted-foreground" />
+                                <X className="h-5 w-5 text-muted-foreground" />
                             </motion.button>
                         </div>
 

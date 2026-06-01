@@ -125,7 +125,11 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <Pause className="h-12 w-12 text-primary fill-primary drop-shadow-md" />
+                {/* Bumped from h-12 w-12 → h-16 w-16 (48 → 64px) per
+                    Bug 4 — the icon is the entire touch target inside
+                    the listen dot, and felt undersized against the
+                    cap-18rem desktop dot. */}
+                <Pause className="h-16 w-16 text-primary fill-primary drop-shadow-md" />
               </motion.div>
             ) : (
               <motion.div
@@ -135,7 +139,13 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <Play className="h-12 w-12 drop-shadow-md ml-1 text-primary fill-primary" />
+                {/* `ml-2` (was `ml-1`) — Lucide's Play triangle has its
+                    visual centroid offset right of its bounding-box center
+                    by roughly icon/6. At 64px that's ~10.7px; `ml-2` (8px)
+                    is the closest Tailwind tier. The icon scaled up in
+                    Bug 4; the margin didn't, so the triangle drifted left
+                    of optical center. */}
+                <Play className="h-16 w-16 drop-shadow-md ml-2 text-primary fill-primary" />
               </motion.div>
             )}
           </AnimatePresence>
