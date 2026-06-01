@@ -1,4 +1,4 @@
-import { ReplyRecord, ReplyView, ProfileView, PromptView, PromptRecordSchema } from 'shared/types';
+import { ReplyRecord, ReplyView, ProfileView, PromptView, PromptRecordSchema, ReplyEnrichmentRecord } from 'shared/types';
 import { OrganizationRecord, OrganizationMemberRecord, OrgInviteRecord } from 'shared/types/records';
 import { OrganizationView, OrganizationMemberView, OrgInviteView } from 'shared/types/views';
 import { PromptDocument } from 'shared/types/storage';
@@ -91,18 +91,25 @@ export class HydrationService {
     /**
      * Hydrates a single ReplyRecord into a ReplyView using the injected loaders.
      *
-     * `preloadedNotes` — viewer-private notes lifted from the
-     * `enrichments/replies/{id}` namespace. Pass when the caller has already
-     * batch-fetched enrichments (the list-hydration paths do this for the
-     * prompt author). Leave undefined for non-author viewers; the field
-     * stays undefined on the view and is also defensively stripped by
-     * `toReplyViewPublic`.
+     * `preloadedEnrichment` — the reply's enrichment record from the
+     * `enrichments/replies/items/{id}` namespace. Pass when the caller
+     * has already batch-fetched enrichments (the list-hydration paths
+     * do this for the prompt author). Leave undefined for non-author
+     * viewers; the lifted private fields (notes, AI cluster,
+     * socialVideo*) stay undefined on the view and are also defensively
+     * stripped by `toReplyViewPublic`.
+     *
+     * AI-enrichment source: the lifted fields (transcription, sentiment,
+     * AI cluster, voice isolation, social video) come from the enrichment
+     * doc only — Stage 4 of the AI-enrichment split removed them from
+     * the canonical `ReplyRecord`. See `specs/ai-enrichment-split.md`
+     * § 3.
      */
     async hydrateReply(
         record: ReplyRecord,
         knownRecipient?: ProfileView,
         preloadedAuthor?: ProfileView | null,
-        preloadedNotes?: string,
+        preloadedEnrichment?: ReplyEnrichmentRecord,
     ): Promise<ReplyView | null> {
         let author: ProfileView | null | undefined = preloadedAuthor;
         if (author === undefined) {
@@ -143,63 +150,79 @@ export class HydrationService {
             readBy: [],
             // Audio duration (seconds) — populated by the transcribeAndScore trigger
             duration: record.audioDurationSec,
-            // AI Enrichment — lift from record to view
-            transcription: record.transcription,
-            sentiment: record.sentiment,
-            energyLevel: record.energyLevel,
-            engagementScore: record.engagementScore,
-            aiStatus: record.aiStatus,
-            aiError: record.aiError,
-            aiSummary: record.aiSummary,
-            aiLabels: record.aiLabels,
+            // AI enrichment — sole source is the enrichment doc since
+            // Stage 4 stripped these off the canonical ReplyRecord.
+            transcription: preloadedEnrichment?.transcription,
+            sentiment: preloadedEnrichment?.sentiment,
+            energyLevel: preloadedEnrichment?.energyLevel,
+            engagementScore: preloadedEnrichment?.engagementScore,
+            aiStatus: preloadedEnrichment?.aiStatus,
+            aiError: preloadedEnrichment?.aiError,
+            aiSummary: preloadedEnrichment?.aiSummary,
+            aiLabels: preloadedEnrichment?.aiLabels,
+            // Voice isolation (paid tier)
+            enhancedAudioUrl: preloadedEnrichment?.enhancedAudioUrl,
+            enhancedStoragePath: preloadedEnrichment?.enhancedStoragePath,
+            // Social-share video (paid tier, creator-only)
+            socialVideoUrl: preloadedEnrichment?.socialVideoUrl,
+            socialVideoStoragePath: preloadedEnrichment?.socialVideoStoragePath,
+            socialVideoStatus: preloadedEnrichment?.socialVideoStatus,
+            socialVideoError: preloadedEnrichment?.socialVideoError,
+            socialVideoSourceAudio: preloadedEnrichment?.socialVideoSourceAudio,
             // CRM enrichment — populated only when the caller has author privileges
-            notes: preloadedNotes,
+            notes: preloadedEnrichment?.notes,
         };
     }
 
     /**
-     * Batch-loads CRM enrichment notes for a set of replies. Returns a Map
-     * keyed by replyId — replies with no enrichment doc (or no `notes`
-     * field) are simply absent. Shared by `hydrateReplies` and
-     * `hydrateRepliesWithRecipient`; caller guards on `includePrivateData`
-     * before invoking.
+     * Batch-loads full enrichment records for a set of replies. Returns a
+     * Map keyed by replyId — replies with no enrichment doc are simply
+     * absent. Shared by `hydrateReplies` and `hydrateRepliesWithRecipient`.
+     *
+     * Pulls the full enrichment record (not just `notes`) because — post
+     * Stage 4 of the AI-enrichment split — the enrichment doc is the sole
+     * source for the lifted AI / voice-isolation / social-video fields,
+     * including the public ones (`transcription`, `enhancedAudioUrl`).
+     * `toReplyViewPublic` strips the private subset on projection. See
+     * `specs/ai-enrichment-split.md` § 3.
      */
-    private async fetchEnrichmentNotes(records: ReplyRecord[]): Promise<Map<string, string>> {
-        const enrichments = await this.deps.getReplyEnrichmentsByIds(records.map(r => r.id));
-        const notesMap = new Map<string, string>();
-        for (const [replyId, enrichment] of enrichments) {
-            if (enrichment.notes !== undefined) notesMap.set(replyId, enrichment.notes);
-        }
-        return notesMap;
+    private async fetchEnrichmentsForReplies(
+        records: ReplyRecord[],
+    ): Promise<Map<string, ReplyEnrichmentRecord>> {
+        return await this.deps.getReplyEnrichmentsByIds(records.map(r => r.id));
     }
 
     /**
      * Helper to preload resources needed for reply hydration.
      * Deduplicates author IDs to prevent database limits.
+     *
+     * Enrichments are always fetched (regardless of `includePrivateData`)
+     * because the public lifted fields (`transcription`,
+     * `enhancedAudioUrl`) live there post Stage 4. The private subset
+     * (notes, sentiment, engagementScore, social-video URL, …) is
+     * stripped on projection by `toReplyViewPublic`.
      */
     private async preloadHydrationResources(
         records: ReplyRecord[],
         options?: { includePrivateData?: boolean },
     ): Promise<{
         authorMap: Map<string, ProfileView>;
-        notesMap?: Map<string, string>;
+        enrichmentsMap?: Map<string, ReplyEnrichmentRecord>;
     }> {
         if (!records.length) {
             return { authorMap: new Map() };
         }
 
         const uniqueAuthorIds = Array.from(new Set(records.map(r => r.authorId)));
-        const profiles = await this.deps.getUsersByIds(uniqueAuthorIds, {
-            includePrivateData: !!options?.includePrivateData,
-        });
+        const [profiles, enrichmentsMap] = await Promise.all([
+            this.deps.getUsersByIds(uniqueAuthorIds, {
+                includePrivateData: !!options?.includePrivateData,
+            }),
+            this.fetchEnrichmentsForReplies(records),
+        ]);
         const authorMap = new Map(profiles.map(p => [p.id, p]));
 
-        let notesMap: Map<string, string> | undefined;
-        if (options?.includePrivateData) {
-            notesMap = await this.fetchEnrichmentNotes(records);
-        }
-
-        return { authorMap, notesMap };
+        return { authorMap, enrichmentsMap };
     }
 
     /**
@@ -208,12 +231,12 @@ export class HydrationService {
     async hydrateReplies(records: ReplyRecord[], options?: { includePrivateData?: boolean }): Promise<ReplyView[]> {
         if (!records.length) return [];
 
-        const { authorMap, notesMap } = await this.preloadHydrationResources(records, options);
+        const { authorMap, enrichmentsMap } = await this.preloadHydrationResources(records, options);
 
         const views = await Promise.all(records.map(r => {
             const author = authorMap.get(r.authorId) || null;
-            const notes = notesMap?.get(r.id);
-            return this.hydrateReply(r, undefined, author, notes);
+            const enrichment = enrichmentsMap?.get(r.id);
+            return this.hydrateReply(r, undefined, author, enrichment);
         }));
         return views.filter((v): v is ReplyView => v !== null);
     }
@@ -225,12 +248,12 @@ export class HydrationService {
     ): Promise<ReplyView[]> {
         if (!records.length) return [];
 
-        const { authorMap, notesMap } = await this.preloadHydrationResources(records, options);
+        const { authorMap, enrichmentsMap } = await this.preloadHydrationResources(records, options);
 
         const views = await Promise.all(records.map(r => {
             const author = authorMap.get(r.authorId) || null;
-            const notes = notesMap?.get(r.id);
-            return this.hydrateReply(r, recipient, author, notes);
+            const enrichment = enrichmentsMap?.get(r.id);
+            return this.hydrateReply(r, recipient, author, enrichment);
         }));
         return views.filter((v): v is ReplyView => v !== null);
     }
