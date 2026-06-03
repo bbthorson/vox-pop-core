@@ -12,6 +12,7 @@
 // Components
 export { ReplyDot } from './components/ReplyDot';
 export { ListenDot } from './components/ListenDot';
+export type { ListenDotMediaSession } from './components/ListenDot';
 export { DotMark } from './components/DotMark';
 export { DotPair } from './components/DotPair';
 export { HairlineRipple } from './components/HairlineRipple';

@@ -6,9 +6,42 @@ import { Play, Pause } from 'lucide-react';
 import { HairlineRipple } from './HairlineRipple';
 import { useContainerSize } from '../hooks/use-container-size';
 
+/**
+ * Lockscreen / hardware-media-key metadata. Optional — pass it (e.g. from the
+ * dashboard reply detail) to claim the browser's MediaSession on play. Public
+ * pages omit it and ListenDot touches MediaSession not at all.
+ */
+export interface ListenDotMediaSession {
+  title: string;
+  artist?: string;
+  album?: string;
+  artwork?: MediaImage[];
+}
+
 interface ListenDotProps {
   audioUrl: string;
   peaks?: number[];
+  mediaSession?: ListenDotMediaSession;
+}
+
+// Module-scope owner: identity of the ListenDot currently driving the browser's
+// MediaSession. Each instance compares its own token to decide whether to keep
+// mirroring playback state (only one owner at a time).
+let currentMediaSessionOwner: object | null = null;
+
+const MEDIA_SESSION_ACTIONS: MediaSessionAction[] = ['play', 'pause', 'seekto'];
+
+function clearGlobalMediaSession() {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+  navigator.mediaSession.playbackState = 'none';
+  navigator.mediaSession.metadata = null;
+  for (const action of MEDIA_SESSION_ACTIONS) {
+    try {
+      navigator.mediaSession.setActionHandler(action, null);
+    } catch {
+      /* unsupported action — ignore */
+    }
+  }
 }
 
 /**
@@ -22,13 +55,19 @@ interface ListenDotProps {
  * The ripple visualization replaces the old horizontal waveform bars,
  * creating concentric hairline rings that emanate from the circle.
  */
-export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
+export function ListenDot({ audioUrl, peaks, mediaSession }: ListenDotProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animFrameRef = useRef<number>(0);
   const { containerRef, size: dotSize } = useContainerSize();
   const reducedMotion = useReducedMotion() ?? false;
+
+  // Stable identity for MediaSession ownership; latest metadata kept in a ref
+  // so the long-lived `ended` handler always reads the current prop.
+  const mediaSessionTokenRef = useRef<object>({});
+  const mediaSessionRef = useRef(mediaSession);
+  mediaSessionRef.current = mediaSession;
 
   useEffect(() => {
     const audio = new Audio(audioUrl);
@@ -38,6 +77,9 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
     audio.addEventListener('ended', () => {
       setIsPlaying(false);
       setProgress(0);
+      if (currentMediaSessionOwner === mediaSessionTokenRef.current && 'mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'none';
+      }
     });
 
     return () => {
@@ -47,10 +89,38 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
     };
   }, [audioUrl]);
 
+  // Relinquish MediaSession ownership on unmount so a stale lockscreen card
+  // doesn't outlive the dot.
+  useEffect(() => {
+    const token = mediaSessionTokenRef.current;
+    return () => {
+      if (currentMediaSessionOwner === token) {
+        clearGlobalMediaSession();
+        currentMediaSessionOwner = null;
+      }
+    };
+  }, []);
+
   const updateProgress = useCallback(() => {
     const audio = audioRef.current;
     if (audio && audio.duration) {
       setProgress(audio.currentTime / audio.duration);
+      // Feed the lockscreen scrubber while we own MediaSession.
+      if (
+        currentMediaSessionOwner === mediaSessionTokenRef.current &&
+        'mediaSession' in navigator &&
+        navigator.mediaSession.setPositionState
+      ) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: audio.duration,
+            position: audio.currentTime,
+            playbackRate: audio.playbackRate,
+          });
+        } catch {
+          /* setPositionState throws on invalid duration/position — ignore */
+        }
+      }
     }
     if (isPlaying) {
       animFrameRef.current = requestAnimationFrame(updateProgress);
@@ -75,9 +145,56 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
+      if (currentMediaSessionOwner === mediaSessionTokenRef.current && 'mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
     } else {
       await audio.play();
       setIsPlaying(true);
+
+      // Claim the browser's MediaSession (lockscreen / media keys) when the
+      // caller supplied metadata. Previous owners stop mirroring once their
+      // token no longer matches.
+      const meta = mediaSessionRef.current;
+      if (meta && 'mediaSession' in navigator) {
+        currentMediaSessionOwner = mediaSessionTokenRef.current;
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: meta.title,
+            artist: meta.artist ?? '',
+            album: meta.album ?? '',
+            artwork: meta.artwork ?? [],
+          });
+        } catch {
+          /* MediaMetadata can throw on invalid artwork URLs — ignore */
+        }
+        // Handlers read `audioRef.current` rather than closing over the local
+        // `audio` — if `audioUrl` changes, a new Audio replaces the ref and the
+        // lockscreen/media keys must drive the live instance, not the old one.
+        navigator.mediaSession.setActionHandler('play', () => {
+          const current = audioRef.current;
+          if (!current) return;
+          void current.play();
+          setIsPlaying(true);
+          navigator.mediaSession.playbackState = 'playing';
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+          const current = audioRef.current;
+          if (!current) return;
+          current.pause();
+          setIsPlaying(false);
+          navigator.mediaSession.playbackState = 'paused';
+        });
+        try {
+          navigator.mediaSession.setActionHandler('seekto', (d) => {
+            const current = audioRef.current;
+            if (current && typeof d.seekTime === 'number') current.currentTime = d.seekTime;
+          });
+        } catch {
+          /* 'seekto' unsupported on some platforms — ignore */
+        }
+        navigator.mediaSession.playbackState = 'playing';
+      }
     }
   };
 
