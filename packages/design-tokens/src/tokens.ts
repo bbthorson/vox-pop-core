@@ -3,7 +3,7 @@
  * defined in `tokens.css`.
  *
  * Use this when CSS variables aren't available — e.g., Canvas rendering
- * (the `RadialBlob` audio visualizer paints into a 2D canvas and can't
+ * (the `HairlineRipple` audio visualizer paints into a 2D canvas and can't
  * read CSS var values without a layout pass), or dark-mode-aware JS
  * logic (theme toggle that needs to read the active value rather than
  * defer to the cascade).
