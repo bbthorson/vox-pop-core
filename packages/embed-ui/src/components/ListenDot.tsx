@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
-import { RadialBlob } from './RadialBlob';
+import { HairlineRipple } from './HairlineRipple';
 import { useContainerSize } from '../hooks/use-container-size';
 
 interface ListenDotProps {
@@ -15,12 +15,12 @@ interface ListenDotProps {
  * ListenDot — Audio playback UI designed for the circular dot container.
  *
  * The listen dot should feel "full" — content exists here. Uses:
- * - RadialBlob extending beyond the dot edge (from pre-computed peaks)
- * - A progress sweep via the blob that illuminates as audio plays
+ * - HairlineRipple extending beyond the dot edge (from pre-computed peaks)
+ * - A progress sweep that illuminates as audio plays
  * - A centered play/pause icon
  *
- * The blob visualization replaces the old horizontal waveform bars,
- * creating an organic aura that emanates from the circle.
+ * The ripple visualization replaces the old horizontal waveform bars,
+ * creating concentric hairline rings that emanate from the circle.
  */
 export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,6 +28,7 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animFrameRef = useRef<number>(0);
   const { containerRef, size: dotSize } = useContainerSize();
+  const reducedMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     const audio = new Audio(audioUrl);
@@ -84,14 +85,15 @@ export function ListenDot({ audioUrl, peaks }: ListenDotProps) {
 
   return (
     <div ref={containerRef} className="relative flex items-center justify-center w-full h-full">
-      {/* RadialBlob — only shown during active playback */}
+      {/* HairlineRipple — only shown during active playback */}
       {hasPeaks && dotSize > 0 && isPlaying && (
-        <RadialBlob
+        <HairlineRipple
           peaks={peaks}
           progress={progress}
           dotSize={dotSize}
           reach={20}
           active
+          reducedMotion={reducedMotion}
         />
       )}
 

@@ -14,7 +14,7 @@ export { ReplyDot } from './components/ReplyDot';
 export { ListenDot } from './components/ListenDot';
 export { DotMark } from './components/DotMark';
 export { DotPair } from './components/DotPair';
-export { RadialBlob } from './components/RadialBlob';
+export { HairlineRipple } from './components/HairlineRipple';
 export { MergedDotSuccess } from './components/MergedDotSuccess';
 export { PromptCard } from './components/PromptCard';
 export {
