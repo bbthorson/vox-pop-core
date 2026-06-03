@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
  * Returns a ref to attach to the container and the current width in pixels.
  * Uses ResizeObserver for efficient updates on resize.
  *
- * Used by ListenDot and ReplyDot to size the RadialBlob canvas to match
+ * Used by ListenDot and ReplyDot to size the HairlineRipple canvas to match
  * the dynamic dot diameter.
  */
 export function useContainerSize() {

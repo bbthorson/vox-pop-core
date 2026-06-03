@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Mic, Square, Send, X, Loader2, Play, Pause } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/use-audio-recorder';
 import { useContainerSize } from '../hooks/use-container-size';
-import { RadialBlob } from './RadialBlob';
+import { HairlineRipple } from './HairlineRipple';
 import type { AuthProvider, AudioUploader, DotsAuthGate } from '../ports';
 
 type ReplyPhase = 'idle' | 'recording' | 'review' | 'authenticating' | 'sending' | 'success';
@@ -79,14 +79,14 @@ interface ReplyDotProps {
  *
  * Simplified flow:
  * - idle: Mic icon centered
- * - recording: RadialBlob pulses around dot, single stop button centered
+ * - recording: HairlineRipple pulses around dot, single stop button centered
  * - review: Three buttons — play preview, discard (X), accept (✓)
  * - authenticating: Auth gate shown in connection area (via context)
  * - sending: Loading spinner
  * - success: Check mark with "send another" link
  *
- * The RadialBlob visualizer extends beyond the dot edge during recording,
- * creating an organic, pulsating aura effect.
+ * The HairlineRipple visualizer extends beyond the dot edge during recording,
+ * creating concentric hairline rings that emanate from the circle.
  */
 export function ReplyDot({
     promptId,
@@ -107,6 +107,7 @@ export function ReplyDot({
     const [isPlayingBack, setIsPlayingBack] = useState(false);
     const audioPlaybackRef = useRef<HTMLAudioElement | null>(null);
     const { containerRef, size: dotSize } = useContainerSize();
+    const reducedMotion = useReducedMotion() ?? false;
 
     // On-domain path needs all three injected adapters. Embed path needs
     // none — the embed POSTs anonymously to /audio/upload-pending and
@@ -417,13 +418,14 @@ export function ReplyDot({
 
     return (
         <div ref={containerRef} className="relative flex items-center justify-center w-full h-full">
-            {/* RadialBlob — renders behind content, extends beyond dot */}
+            {/* HairlineRipple — renders behind content, extends beyond dot */}
             {showBlob && dotSize > 0 && (
-                <RadialBlob
+                <HairlineRipple
                     analyser={analyserNode}
                     dotSize={dotSize}
                     reach={28}
                     active
+                    reducedMotion={reducedMotion}
                 />
             )}
 
