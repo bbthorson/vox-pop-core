@@ -139,7 +139,11 @@
     --surface-sunken: 30 25% 94%;
     --ink-strong: 20 25% 12%;
     --ink-muted: 25 14% 32%;
-    --ink-subtle: 25 14% 55%;
+    /* Darkened from 55% (3.13:1 on the warm-paper background — failed WCAG
+       AA for the 12px EditorialMeta labels) to 42% (4.96:1, passes), while
+       staying clearly lighter than ink-muted (32%) so the ink ramp keeps
+       its hierarchy. Editorial dark-mode ink-subtle already clears AA. */
+    --ink-subtle: 25 14% 42%;
     --accent-warm: 20 75% 55%;
     --rule: 28 18% 78%;
     --shadow-editorial: 0 6px 24px -8px hsl(20 15% 15% / 0.08), 0 2px 6px -2px hsl(20 15% 15% / 0.04);
