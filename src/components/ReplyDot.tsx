@@ -132,6 +132,16 @@ export function ReplyDot({
 
     const { startRecording, stopRecording, isRecording, analyserNode } = useAudioRecorder({
         onRecordingComplete: handleRecordingComplete,
+        // Without this, a denied / missing mic stranded the user: the phase
+        // optimistically flips to `recording` (see handleTapToRecord) but
+        // getUserMedia rejects, the hook's typed error went to a no-op, and
+        // the dot was left showing a Stop button for a recording that never
+        // started — with no message and no way back to idle but a reload.
+        // Surface the friendly string and return to idle so they can retry.
+        onError: (message) => {
+            setError(message);
+            setPhase('idle');
+        },
     });
 
     const needsAuth = useCallback((): boolean => {
@@ -143,6 +153,11 @@ export function ReplyDot({
     }, [auth, isEmbed]);
 
     const handleTapToRecord = () => {
+        // Clear any prior permission/device error from a previous attempt.
+        // The phase flip is optimistic — if startRecording rejects (denied
+        // mic, no device), the recorder's onError reverts us to idle and
+        // sets a fresh error.
+        setError(null);
         startRecording();
         setPhase('recording');
     };
@@ -421,24 +436,39 @@ export function ReplyDot({
                     changes. Was w-16 h-16 (64px); felt undersized
                     against the cap-18rem desktop dot. */}
                 {phase === 'idle' && (
-                    <motion.button
+                    <motion.div
                         key="idle"
-                        onClick={handleTapToRecord}
-                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                        className="flex flex-col items-center gap-3"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        aria-label="Start recording your reply"
                     >
-                        <motion.span
-                            animate={{ y: [0, -3, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                        <motion.button
+                            onClick={handleTapToRecord}
+                            className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            aria-label="Start recording your reply"
                         >
-                            <Mic className="h-9 w-9" />
-                        </motion.span>
-                    </motion.button>
+                            <motion.span
+                                animate={{ y: [0, -3, 0] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                            >
+                                <Mic className="h-9 w-9" />
+                            </motion.span>
+                        </motion.button>
+                        {/* Permission / device errors land here after a failed
+                            start so the user sees why nothing happened and can
+                            retry by tapping the mic again. */}
+                        {error && (
+                            <p
+                                role="alert"
+                                className="text-xs text-destructive text-center max-w-[200px]"
+                            >
+                                {error}
+                            </p>
+                        )}
+                    </motion.div>
                 )}
 
                 {/* RECORDING — Stop button only (blob handles visualization) */}
