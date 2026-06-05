@@ -146,6 +146,11 @@ export function App() {
  *     short-circuits before `useTwoDotsAuth()` is called.
  */
 function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) {
+    // Recording / upload errors surface here, below the dots — the ReplyDot
+    // lives inside a round `overflow-hidden` DotMark that clips wide captions,
+    // so the status text can't live inside the circle.
+    const [replyError, setReplyError] = useState<string | null>(null);
+
     return (
         <div className="theme-editorial relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-background px-4 py-3 text-foreground">
             <div className="w-full max-w-md">
@@ -154,7 +159,7 @@ function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) 
                         <DotMark
                             variant="filled"
                             tone="primary"
-                            className="size-[clamp(7rem,25vmin,11rem)]"
+                            className="size-[clamp(9rem,32vmin,13rem)]"
                         >
                             {prompt.record.audioUrl ? (
                                 <ListenDot
@@ -172,7 +177,7 @@ function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) 
                         <DotMark
                             variant="ring"
                             tone="accent-warm"
-                            className="size-[clamp(7rem,25vmin,11rem)]"
+                            className="size-[clamp(9rem,32vmin,13rem)]"
                         >
                             <ReplyDot
                                 promptId={prompt.record.id}
@@ -181,6 +186,7 @@ function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) 
                                 isEmbed
                                 coreApiBaseUrl={CORE_API_BASE_URL}
                                 hostAppBaseUrl={HOST_APP_BASE_URL}
+                                onError={setReplyError}
                             />
                         </DotMark>
                     }
@@ -201,6 +207,14 @@ function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) 
                         </div>
                     }
                 />
+                {replyError && (
+                    <p
+                        role="alert"
+                        className="mt-3 text-center text-sm text-destructive"
+                    >
+                        {replyError}
+                    </p>
+                )}
             </div>
         </div>
     );
