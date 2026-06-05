@@ -62,6 +62,18 @@ interface ReplyDotProps {
      */
     coreApiBaseUrl?: string;
     /**
+     * Optional sink for recording / upload status errors. When provided, the
+     * consumer owns the error display (rendered OUTSIDE the circular `DotMark`,
+     * which is `overflow-hidden` and clips wide text) and the in-circle caption
+     * is suppressed. When omitted, ReplyDot falls back to rendering the message
+     * inside the dot — fine for the larger on-domain recording surfaces, but it
+     * clips in the small embed dots, which is why the embed passes this.
+     *
+     * Fires with `null` when the error clears so the consumer can hide its
+     * message.
+     */
+    onError?: (message: string | null) => void;
+    /**
      * Origin of the apps/web host that completes the embed handoff —
      * the top-frame redirect target after a pending upload. The URL is
      * constructed as `${hostAppBaseUrl}/@${creatorHandle}/${promptId}?pending=...`
@@ -99,6 +111,7 @@ export function ReplyDot({
     mergeStateSignal = null,
     coreApiBaseUrl,
     hostAppBaseUrl,
+    onError,
 }: ReplyDotProps) {
     const [phase, setPhase] = useState<ReplyPhase>('idle');
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -113,6 +126,23 @@ export function ReplyDot({
     // none — the embed POSTs anonymously to /audio/upload-pending and
     // hands off to the host domain via a top-frame redirect.
     const didAuthThisSession = useRef(false);
+
+    // Mirror error state to the consumer when an `onError` sink is provided.
+    // Centralizing here (rather than at every `setError` call site) keeps the
+    // notification in one place and naturally fires `null` on clear. The
+    // consumer renders the message outside the clipped circle.
+    //
+    // Route `onError` through a ref so the notify effect depends only on
+    // `error` — a consumer passing an inline `onError={(m) => ...}` would
+    // otherwise change the callback identity every render and re-fire (or
+    // loop) the effect on each one.
+    const onErrorRef = useRef(onError);
+    useEffect(() => {
+        onErrorRef.current = onError;
+    });
+    useEffect(() => {
+        onErrorRef.current?.(error);
+    }, [error]);
 
     // Cleanup audio URL and playback on unmount
     useEffect(() => {
@@ -237,8 +267,17 @@ export function ReplyDot({
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.message || 'Upload failed');
+                // Unwrap the error envelope `{ success: false, error: { message } }`.
+                // Reading `body.message` (the old code) always missed — the
+                // message is nested under `error` — so every real failure
+                // (rate-limit, prompt-not-live, storage) collapsed into the
+                // generic "Upload failed". Surface the actual reason, and fall
+                // back to the status code so it's never fully opaque.
+                const body = await res.json().catch(() => ({} as Record<string, unknown>));
+                const serverMessage =
+                    (body as { error?: { message?: string }; message?: string })?.error?.message ||
+                    (body as { message?: string })?.message;
+                throw new Error(serverMessage || `Upload failed (${res.status})`);
             }
 
             // POST /audio/upload-pending returns `{ success: true, data: { pendingId } }`
@@ -461,8 +500,10 @@ export function ReplyDot({
                         </motion.button>
                         {/* Permission / device errors land here after a failed
                             start so the user sees why nothing happened and can
-                            retry by tapping the mic again. */}
-                        {error && (
+                            retry by tapping the mic again. Suppressed when an
+                            `onError` sink is provided — the consumer renders the
+                            message outside the clipped circle instead. */}
+                        {!onError && error && (
                             <p
                                 role="alert"
                                 className="text-xs text-destructive text-center max-w-[200px]"
@@ -538,7 +579,7 @@ export function ReplyDot({
                             </motion.button>
                         </div>
 
-                        {error && (
+                        {!onError && error && (
                             <p className="text-xs text-destructive text-center max-w-[180px]">
                                 {error}
                             </p>
