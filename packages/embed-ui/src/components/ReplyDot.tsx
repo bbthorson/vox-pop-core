@@ -6,6 +6,12 @@ import { Mic, Square, Send, X, Loader2, Play, Pause } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/use-audio-recorder';
 import { useContainerSize } from '../hooks/use-container-size';
 import { HairlineRipple } from './HairlineRipple';
+import {
+    phaseTransition,
+    micBreathing,
+    buttonScalePrimary,
+    buttonScaleSecondary,
+} from '../motion';
 import type { AuthProvider, AudioUploader, DotsAuthGate } from '../ports';
 
 type ReplyPhase = 'idle' | 'recording' | 'review' | 'authenticating' | 'sending' | 'success';
@@ -480,21 +486,15 @@ export function ReplyDot({
                     <motion.div
                         key="idle"
                         className="flex flex-col items-center gap-3"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
+                        {...phaseTransition}
                     >
                         <motion.button
                             onClick={handleTapToRecord}
                             className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
+                            {...buttonScalePrimary}
                             aria-label="Start recording your reply"
                         >
-                            <motion.span
-                                animate={{ y: [0, -3, 0] }}
-                                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                            >
+                            <motion.span {...micBreathing}>
                                 <Mic className="h-9 w-9" />
                             </motion.span>
                         </motion.button>
@@ -520,11 +520,8 @@ export function ReplyDot({
                         key="recording"
                         onClick={handleStop}
                         className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        {...phaseTransition}
+                        {...buttonScaleSecondary}
                         aria-label="Stop recording"
                     >
                         <Square className="h-7 w-7 fill-current" />
@@ -536,17 +533,14 @@ export function ReplyDot({
                     <motion.div
                         key="review"
                         className="flex flex-col items-center gap-3"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
+                        {...phaseTransition}
                     >
                         <div className="flex items-center gap-3">
                             {/* Play/pause preview — secondary, w-12 h-12 (was w-10 h-10) */}
                             <motion.button
                                 onClick={handlePlayback}
                                 className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                {...buttonScaleSecondary}
                                 aria-label={isPlayingBack ? 'Pause preview' : 'Play preview'}
                             >
                                 {isPlayingBack ? (
@@ -560,8 +554,7 @@ export function ReplyDot({
                             <motion.button
                                 onClick={handleAccept}
                                 className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                {...buttonScaleSecondary}
                                 aria-label={`Send reply to ${hostName}`}
                             >
                                 <Send className="h-8 w-8" />
@@ -571,8 +564,7 @@ export function ReplyDot({
                             <motion.button
                                 onClick={handleDiscard}
                                 className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                                {...buttonScaleSecondary}
                                 aria-label="Discard recording"
                             >
                                 <X className="h-5 w-5 text-muted-foreground" />
@@ -592,9 +584,7 @@ export function ReplyDot({
                     <motion.div
                         key="authenticating"
                         className="flex flex-col items-center gap-2"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
+                        {...phaseTransition}
                     >
                         <div className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center">
                             <Mic className="h-5 w-5 text-primary/60" />
@@ -608,9 +598,7 @@ export function ReplyDot({
                     <motion.div
                         key="sending"
                         className="flex items-center justify-center"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
+                        {...phaseTransition}
                     >
                         <Loader2 className="h-10 w-10 text-primary animate-spin" />
                     </motion.div>

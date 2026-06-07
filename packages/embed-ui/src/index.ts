@@ -35,6 +35,15 @@ export type {
 } from './hooks/use-audio-recorder';
 export { useContainerSize } from './hooks/use-container-size';
 
+// Motion presets (shared dot-family animation vocabulary)
+export {
+    phaseTransition,
+    micBreathing,
+    buttonScalePrimary,
+    buttonScaleSecondary,
+    iconSwap,
+} from './motion';
+
 // Ports (interfaces apps fulfill with adapters)
 export type {
     AuthProvider,
