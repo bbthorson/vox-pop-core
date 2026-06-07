@@ -154,6 +154,11 @@ function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) 
     return (
         <div className="theme-editorial relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-background px-4 py-3 text-foreground">
             <div className="w-full max-w-md">
+                {/* Dot size MUST match apps/web's EmbedPublicPrompt
+                    (apps/web/src/components/public/PublicPrompt.tsx) — both
+                    render the same prompt's dots, so a mismatch makes the same
+                    prompt look a different size depending on which surface
+                    serves the iframe. */}
                 <DotPair
                     listen={
                         <DotMark
