@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
 import { HairlineRipple } from './HairlineRipple';
 import { useContainerSize } from '../hooks/use-container-size';
+import { buttonScalePrimary, iconSwap } from '../motion';
 
 /**
  * Lockscreen / hardware-media-key metadata. Optional — pass it (e.g. from the
@@ -231,19 +232,10 @@ export function ListenDot({ audioUrl, peaks, mediaSession }: ListenDotProps) {
         className="relative z-10 flex items-center justify-center cursor-pointer group"
         aria-label={isPlaying ? 'Pause' : 'Play prompt audio'}
       >
-        <motion.div
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
+        <motion.div {...buttonScalePrimary}>
           <AnimatePresence mode="wait">
             {isPlaying ? (
-              <motion.div
-                key="pause"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
+              <motion.div key="pause" {...iconSwap}>
                 {/* Bumped from h-12 w-12 → h-16 w-16 (48 → 64px) per
                     Bug 4 — the icon is the entire touch target inside
                     the listen dot, and felt undersized against the
@@ -251,13 +243,7 @@ export function ListenDot({ audioUrl, peaks, mediaSession }: ListenDotProps) {
                 <Pause className="h-16 w-16 text-primary fill-primary drop-shadow-md" />
               </motion.div>
             ) : (
-              <motion.div
-                key="play"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
+              <motion.div key="play" {...iconSwap}>
                 {/* `ml-2` (was `ml-1`) — Lucide's Play triangle has its
                     visual centroid offset right of its bounding-box center
                     by roughly icon/6. At 64px that's ~10.7px; `ml-2` (8px)
