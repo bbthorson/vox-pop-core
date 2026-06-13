@@ -8,7 +8,7 @@ import {
     ListenDot,
     ReplyDot,
 } from '@vox-pop/embed-ui';
-import type { ProfileView, PromptView } from 'shared/types';
+import type { ProfileView, PromptView } from 'shared/types/views';
 
 import { CORE_API_BASE_URL, HOST_APP_BASE_URL, getAudioProxyUrl } from './lib/config';
 
