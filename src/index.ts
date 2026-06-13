@@ -13,6 +13,8 @@
 export { ReplyDot } from './components/ReplyDot';
 export { ListenDot } from './components/ListenDot';
 export type { ListenDotMediaSession } from './components/ListenDot';
+export { RecordingContent } from './components/RecordingContent';
+export type { RecordPhase } from './components/RecordingContent';
 export { DotMark } from './components/DotMark';
 export { DotPair } from './components/DotPair';
 export { HairlineRipple } from './components/HairlineRipple';
