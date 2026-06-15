@@ -3,35 +3,54 @@ title: Architecture
 description: How Vox Pop Core is wired internally.
 ---
 
-:::note
-This page is a stub. Expanded architecture writeup coming soon — covering the route → service → dependency seams, the Firebase-wired composition root, and how to swap in a non-Firebase backend.
-:::
+Vox Pop Core is a ports-and-adapters (hexagonal) service. HTTP comes in through inbound adapters, business logic lives in services that depend only on small interfaces, and a composition root wires concrete Firebase-backed implementations of those interfaces. The point of the shape: **you can swap the backend without touching the routes or the logic.**
 
 ## The 30-second version
 
 ```
-┌─────────────────────────────────────────────────┐
-│              apps/core-api/                     │
-│                                                 │
-│   src/routes/*.ts   ← Hono handlers + Zod       │
-│        │                                        │
-│        ▼                                        │
-│   services/core-services-firebase.ts            │
-│   ← composition root, wires Firebase            │
-│     implementations of *Dependencies interfaces │
-│        │                                        │
-│        ▼                                        │
-│   packages/core/services/*.ts                   │
-│   ← pure-TS service classes (UserService,       │
-│     PromptService, ReplyService, …)             │
-│        │                                        │
-│        ▼                                        │
-│   *Dependencies interfaces (firebase-admin)     │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                   apps/core-api/                      │
+│                                                       │
+│   adapters/inbound/rest/*.ts                          │
+│   ← Hono handlers + Zod request/response schemas      │
+│        │                                              │
+│        ▼                                              │
+│   use-cases/*.ts        (application logic)           │
+│        │                                              │
+│        ▼                                              │
+│   packages/core/services/*.ts                         │
+│   ← pure-TS services (UserService, PromptService,     │
+│     ReplyService, FeedService, …) over *Dependencies  │
+│     interfaces — no Firebase import                   │
+│        ▲                                              │
+│        │ implements                                   │
+│   adapters/outbound/firebase/*.ts                     │
+│   ← composition root: Firebase-backed implementations │
+└─────────────────────────────────────────────────────┘
 ```
 
-- **Routes** (`apps/core-api/src/routes/`) handle HTTP — validate with Zod, auth via the bearer middleware, delegate to a service.
-- **Services** (`packages/core/services/`) hold business logic. They depend on small `*Dependencies` interfaces, not Firebase directly.
-- **Composition root** (`apps/core-api/src/services/core-services-firebase.ts`) wires Firebase-backed implementations of those interfaces.
+## The layers
 
-To run on a non-Firebase backend (Postgres, in-memory tests, …), swap the composition root — no changes to `packages/core/`.
+- **Inbound adapters** (`apps/core-api/src/adapters/inbound/rest/`) own HTTP. Each route file validates with Zod, authenticates via the bearer middleware, and delegates. Routes mount under `/api/v1/*` in `apps/core-api/src/app.ts` — that file is the single registry of the public surface (`prompts`, `replies`, `users`, `audio`, `rss`, `organizations`, `atproto`, …).
+- **Use cases** (`apps/core-api/src/use-cases/`) hold application-level orchestration — the steps a request triggers, independent of transport.
+- **Services** (`packages/core/services/`) hold domain logic. They depend on small `*Dependencies` interfaces (a data port, a clock, an ID generator), **never on `firebase-admin` directly**. This is the package you reuse or test in isolation.
+- **Outbound adapters / composition root** (`apps/core-api/src/adapters/outbound/firebase/`) implement those `*Dependencies` interfaces against Firestore, Firebase Auth, and Cloud Storage, and assemble the wired services that the routes import.
+
+## The seam that matters
+
+Because services depend on interfaces and the composition root supplies the implementations, the backend is a single swap point:
+
+- **Tests** inject in-memory implementations of `*Dependencies` — no emulator needed for unit tests of `packages/core`.
+- **A different backend** (Postgres, SQLite, an HTTP upstream) means writing one new outbound adapter set and pointing the composition root at it. `packages/core/services/` and every route file stay untouched.
+
+If you're building your own app *on top of* the API, you don't need any of this — you talk to `/api/v1/*` over HTTP (see [Build your own app](/build-your-own/overview/)). This layering matters when you're **extending or re-backing the core itself**.
+
+## Where the AT Protocol fits
+
+Identity interop is part of the open core but deliberately split. The record→lexicon transform is pure and lives in `packages/core/services/atproto-lexicon.ts`; the PDS I/O and OAuth client (the publishing side) live in the hosted layer. The [`lexicons/` README](https://github.com/bbthorson/vox-pop-core/blob/main/lexicons/README.md) documents both the lexicon shapes and that seam.
+
+## Where next?
+
+- [Build your own app](/build-your-own/overview/) — consume the API from your own surface.
+- [Configuration](/self-hosting/configuration/) — the env vars and deploy targets for the composition root.
+- [API reference](/api/overview/) — the contract the inbound adapters expose.

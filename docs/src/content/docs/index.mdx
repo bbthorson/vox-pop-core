@@ -28,6 +28,9 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 	<Card title="Self-host it" icon="rocket">
 		Run the open core against your own Firebase project. [Quick start →](/self-hosting/quick-start/)
 	</Card>
+	<Card title="Build your own app" icon="code-branch">
+		Consume the public API from your own surface — `apps/embed` is the worked example. [Get started →](/build-your-own/overview/)
+	</Card>
 	<Card title="API reference" icon="document">
 		Every `/api/v1/*` endpoint, generated from the Zod schemas. [Browse →](/api/overview/)
 	</Card>
@@ -36,3 +39,5 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 ## What's intentionally not here
 
 The hosted product at [voxpop.com](https://voxpop.com) adds IVR / call-forwarding, embed widgets, and team features. Those live in a separate closed-source layer and aren't part of this open core.
+
+Building a creator-facing experience rather than self-hosting the engine? The hosted product's [creator help center](https://voxpop.app/help) documents the end-user side — recording prompts, managing replies, and sharing embeds.

@@ -31,4 +31,6 @@ These live in the closed-source layer that runs at `voxpop.com`. The open core i
 
 - New to the project? Read the [architecture overview](/introduction/architecture/).
 - Want to run it locally? [Quick start](/self-hosting/quick-start/).
+- Building your own surface on the core? [Build your own app](/build-your-own/overview/).
 - Building against the API? [API reference](/api/overview/).
+- Looking for the **creator** side (how end users record prompts and manage replies on the hosted product)? See the [creator help center](https://voxpop.app/help) at voxpop.app.
