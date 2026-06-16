@@ -510,6 +510,15 @@ export function ReplyDot({
     // Show blob during recording
     const showBlob = phase === 'recording' && isRecording;
 
+    // Fill the dot once a reply has been captured, mirroring the always-filled
+    // listen dot: DotMark's `filled` variant reads as "content lives here", vs
+    // `ring` = "awaiting content". `audioBlob` is set on record-complete and
+    // cleared on discard/reset, so the dot reverts to its empty ring if the
+    // recording is thrown away. Falls back to the caller's `dotVariant` (ring
+    // by default) while there's nothing recorded.
+    const hasRecordedContent = audioBlob !== null;
+    const effectiveDotVariant: DotMarkVariant = hasRecordedContent ? 'filled' : dotVariant;
+
     const isReview = phase === 'review';
     // Distance from the dot's center to the inner edge of each flank button.
     // Derived from the *shrunken* review radius so the buttons hug the smaller
@@ -532,7 +541,7 @@ export function ReplyDot({
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
                 <DotMark
-                    variant={dotVariant}
+                    variant={effectiveDotVariant}
                     tone={dotTone}
                     className={dotClassName}
                     label={dotLabel}
