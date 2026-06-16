@@ -28,6 +28,13 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Build your own',
+					items: [
+						{ label: 'Build your own app', slug: 'build-your-own/overview' },
+						{ label: 'Example: the embed app', slug: 'build-your-own/embed-example' },
+					],
+				},
+				{
 					label: 'API reference',
 					items: [
 						{ label: 'Overview', slug: 'api/overview' },
