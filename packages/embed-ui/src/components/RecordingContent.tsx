@@ -79,13 +79,16 @@ export function RecordingContent({
     // seeds the parent's recordPhase without waiting for the next phase change.
     useEffect(() => {
         onPhaseChange?.(phase);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Mount-only: deps intentionally empty. embed-ui's ESLint config doesn't
+        // enforce react-hooks/exhaustive-deps, so we use a prose note rather than
+        // a disable directive (a directive for an unregistered rule errors under
+        // flat config). Same convention as ReplyDot.
     }, []);
 
     useEffect(() => {
         if (hasRecording && phase === 'idle') updatePhase('review');
         if (!hasRecording && phase === 'review') updatePhase('idle');
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Intentionally keyed on `hasRecording` only — see the mount note above.
     }, [hasRecording]);
 
     function updatePhase(next: RecordPhase) {
