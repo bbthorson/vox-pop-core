@@ -66,7 +66,7 @@ env:
     # monorepo, which is shadowed by this file at deploy time. See
     # apps/core-api/src/app.ts:parseAllowedOrigins for the parser.
     - variable: ALLOWED_ORIGINS
-      value: "https://voxpop.phonicfactory.com,https://embed.phonicfactory.com,https://vox-pop-embed.web.app,https://vox-pop-embed.firebaseapp.com,https://vox-pop--vox-pop-simple.us-east4.hosted.app,https://vox-pop-core-api--vox-pop-simple.us-east4.hosted.app"
+      value: "https://voxpop.phonicfactory.com,https://embed.phonicfactory.com,https://vox-pop-embed.web.app,https://vox-pop-embed.firebaseapp.com,https://vox-pop--vox-pop-simple.us-east4.hosted.app,https://vox-pop-core-api--vox-pop-simple.us-east4.hosted.app,https://embed.voxpop.phonicfactory.com"
       availability:
           - RUNTIME
     # Shared secret for sibling-service auth — apps/web (and eventually
