@@ -117,11 +117,25 @@ Auth (1 — `atproto/disconnect`).**
   instrumented without one.
 
 ### A5 — Public-surface snapshot + CI guard
+- **Sequencing: A5 runs LAST.** It has a hard dependency on A1–A4 — A1/A2
+  change *which* endpoints are documented and A4 fixes the tags, so snapshotting
+  before those settle just locks a surface you're about to churn. Generate the
+  snapshot only after A1–A4 land.
 - Commit a snapshot of the public **path+method** set (e.g.
   `apps/core-api/openapi.surface.json`, derived from `openapi.json`).
 - Add a test (vitest) / CI step: regenerate the spec, extract the path+method
   set, diff against the snapshot, **fail on any difference**. Updating the
   snapshot must happen in the same PR → surface changes become deliberate.
+  (Hook: the private repo's `ci.yml` already runs `npm test` on
+  `pull_request → master`, so this is a vitest test, not a new workflow.)
+- **Scope — surface *shape*, not contract *detail*.** This guard locks the SET
+  of public endpoints (path+method). It deliberately does **not** catch
+  field-level contract drift *within* an endpoint — a `maxLength` shrinking, a
+  field becoming required, a property being pruned (exactly the drift the
+  `openapi.json` regen fixed when `title` went 100→80). That class of change is
+  the more dangerous one for downstream devs but belongs to **Plan D**
+  (versioning `@vox-pop/shared` so the contract detail can move under a version,
+  not silently). Don't assume A5 covers it.
 - **Accept:** adding/removing/renaming a public endpoint fails CI until the
   snapshot is updated alongside it.
 
