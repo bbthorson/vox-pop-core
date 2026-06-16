@@ -63,7 +63,7 @@ import { DotPair, DotMark, ListenDot, ReplyDot } from '@vox-pop/embed-ui';
 
 <DotPair
     listen={<ListenDot audioUrl={getAudioProxyUrl(prompt.record.audioUrl)} peaks={prompt.record.waveformPeaks} />}
-    reply={<ReplyDot promptId={prompt.record.id} isEmbed coreApiBaseUrl={CORE_API_BASE_URL} hostAppBaseUrl={HOST_APP_BASE_URL} />}
+    reply={<ReplyDot promptId={prompt.record.id} creatorHandle={user.handle} isEmbed coreApiBaseUrl={CORE_API_BASE_URL} hostAppBaseUrl={HOST_APP_BASE_URL} />}
 />
 ```
 

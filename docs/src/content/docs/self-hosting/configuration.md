@@ -46,7 +46,7 @@ The hosted production deploy at `api.phonicfactory.com` uses **Firebase App Host
 
 `core-api` is a plain Node service with no platform-specific dependencies, so other targets work too:
 
-- **Cloud Run** — container the service, set the env vars as secrets/config, let `PORT` be injected.
+- **Cloud Run** — containerize the service, set the env vars as secrets/config, let `PORT` be injected.
 - **Fly.io / Render / a VM** — `npm run build` then run the Node entrypoint; set `PORT` and the Firebase credentials.
 
 Whatever the target, the only hard requirement is reachable Firebase credentials (or the emulator hosts) and a correct `ALLOWED_ORIGINS` for your browser clients.
