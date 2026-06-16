@@ -17,6 +17,8 @@ export { RecordingContent } from './components/RecordingContent';
 export type { RecordPhase } from './components/RecordingContent';
 export { DotMark } from './components/DotMark';
 export { DotPair } from './components/DotPair';
+export { EmbedPrompt } from './components/EmbedPrompt';
+export type { EmbedPromptProps } from './components/EmbedPrompt';
 export { HairlineRipple } from './components/HairlineRipple';
 export { MergedDotSuccess } from './components/MergedDotSuccess';
 export { PromptCard } from './components/PromptCard';

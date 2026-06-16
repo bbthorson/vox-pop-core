@@ -6,6 +6,7 @@ import { Mic, Square, Send, X, Loader2, Play, Pause } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/use-audio-recorder';
 import { useContainerSize } from '../hooks/use-container-size';
 import { HairlineRipple } from './HairlineRipple';
+import { DotMark, type DotMarkVariant, type DotMarkTone } from './DotMark';
 import {
     phaseTransition,
     micBreathing,
@@ -15,6 +16,16 @@ import {
 import type { AuthProvider, AudioUploader, DotsAuthGate } from '../ports';
 
 type ReplyPhase = 'idle' | 'recording' | 'review' | 'authenticating' | 'sending' | 'success';
+
+/**
+ * How much the dot shrinks in the `review` phase to make room for the two
+ * flanking action buttons (discard / send) that sit just outside it. Smaller
+ * than 1 so the dot + flanks stay within a phone's width — the original
+ * "three buttons crammed inside the circle" layout had no such headroom.
+ */
+const REVIEW_DOT_SCALE = 0.72;
+/** Gap (px) between the shrunken dot's edge and each flanking button. */
+const REVIEW_FLANK_GAP = 12;
 
 interface ReplyDotProps {
     promptId: string;
@@ -90,6 +101,31 @@ interface ReplyDotProps {
      * apps/web embedding its own page passes its own origin.
      */
     hostAppBaseUrl?: string;
+    /**
+     * Sizing classes for the dot circle (e.g. `size-[clamp(...)]`).
+     *
+     * ReplyDot owns its own `DotMark` so the `review`-phase action buttons
+     * (discard / send) can render OUTSIDE the circle — the `DotMark` is
+     * `overflow-hidden`, so anything that needs to escape the circle can't be
+     * its child. Consumers therefore pass the dot's presentation here rather
+     * than wrapping `<DotMark><ReplyDot/></DotMark>`.
+     */
+    dotClassName?: string;
+    /**
+     * Small-caps label rendered inside the dot (e.g. "REPLY"). The full
+     * editorial page passes this; the narrow embed omits it (the label
+     * collides with the centered content under ~170px — see PublicPrompt).
+     */
+    dotLabel?: string;
+    /**
+     * Framer `layoutId` forwarded to the dot. The full page passes
+     * `"reply-dot"` so the dot participates in the merge animation; the embed
+     * omits it.
+     */
+    dotLayoutId?: string;
+    /** Dot visual treatment — reply dots are a warm ring by default. */
+    dotVariant?: DotMarkVariant;
+    dotTone?: DotMarkTone;
 }
 
 /**
@@ -98,10 +134,18 @@ interface ReplyDotProps {
  * Simplified flow:
  * - idle: Mic icon centered
  * - recording: HairlineRipple pulses around dot, single stop button centered
- * - review: Three buttons — play preview, discard (X), accept (✓)
+ * - review: the dot shrinks to a centered play-preview control, with discard
+ *   (X, left) and send (→, right) as buttons flanking the dot — OUTSIDE the
+ *   circle so the cramped "three buttons inside the dot" layout is gone. The
+ *   dot itself therefore only ever shows record (idle/recording) or play
+ *   (review).
  * - authenticating: Auth gate shown in connection area (via context)
  * - sending: Loading spinner
  * - success: Check mark with "send another" link
+ *
+ * ReplyDot owns its own `DotMark` (consumers pass `dotClassName` / `dotLabel`
+ * / `dotLayoutId` rather than wrapping it) precisely so the review-phase flank
+ * buttons can live outside the `overflow-hidden` circle.
  *
  * The HairlineRipple visualizer extends beyond the dot edge during recording,
  * creating concentric hairline rings that emanate from the circle.
@@ -118,6 +162,11 @@ export function ReplyDot({
     coreApiBaseUrl,
     hostAppBaseUrl,
     onError,
+    dotClassName,
+    dotLabel,
+    dotLayoutId,
+    dotVariant = 'ring',
+    dotTone = 'accent-warm',
 }: ReplyDotProps) {
     const [phase, setPhase] = useState<ReplyPhase>('idle');
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -461,158 +510,212 @@ export function ReplyDot({
     // Show blob during recording
     const showBlob = phase === 'recording' && isRecording;
 
+    const isReview = phase === 'review';
+    // Distance from the dot's center to the inner edge of each flank button.
+    // Derived from the *shrunken* review radius so the buttons hug the smaller
+    // circle. `dotSize` is the measured (un-scaled) diameter — the CSS scale
+    // transform doesn't change offsetWidth, so we apply REVIEW_DOT_SCALE here.
+    const flankOffset = (dotSize * REVIEW_DOT_SCALE) / 2 + REVIEW_FLANK_GAP;
+
     return (
-        <div ref={containerRef} className="relative flex items-center justify-center w-full h-full">
-            {/* HairlineRipple — renders behind content, extends beyond dot */}
-            {showBlob && dotSize > 0 && (
-                <HairlineRipple
-                    analyser={analyserNode}
-                    dotSize={dotSize}
-                    reach={28}
-                    active
-                    reducedMotion={reducedMotion}
-                />
-            )}
-
-            <AnimatePresence mode="wait">
-
-                {/* IDLE — Mic button.
-                    Bug 4 — primary actions across all three phases
-                    (idle/recording/review-send) sized to w-20 h-20 (80px)
-                    so the central control doesn't jump as the phase
-                    changes. Was w-16 h-16 (64px); felt undersized
-                    against the cap-18rem desktop dot. */}
-                {phase === 'idle' && (
-                    <motion.div
-                        key="idle"
-                        className="flex flex-col items-center gap-3"
-                        {...phaseTransition}
+        // Cluster: the dot is the only in-flow child, so this box sizes to the
+        // dot and stays centered in DotPair. The flank buttons are absolutely
+        // positioned siblings of the dot, so they escape the dot's
+        // `overflow-hidden` clip and overflow the cluster symmetrically.
+        <div className="relative flex items-center justify-center">
+            {/* Dot wrapper — scales the whole circle down in review. Kept as a
+                separate element from DotMark so its transform never collides
+                with DotMark's `layout` animation (the merge handoff). */}
+            <motion.div
+                className="relative"
+                animate={{ scale: isReview ? REVIEW_DOT_SCALE : 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+                <DotMark
+                    variant={dotVariant}
+                    tone={dotTone}
+                    className={dotClassName}
+                    label={dotLabel}
+                    layoutId={dotLayoutId}
+                >
+                    <div
+                        ref={containerRef}
+                        className="relative flex items-center justify-center w-full h-full"
                     >
-                        <motion.button
-                            onClick={handleTapToRecord}
-                            className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                            {...buttonScalePrimary}
-                            aria-label="Start recording your reply"
-                        >
-                            <motion.span {...micBreathing}>
-                                <Mic className="h-9 w-9" />
-                            </motion.span>
-                        </motion.button>
-                        {/* Permission / device errors land here after a failed
-                            start so the user sees why nothing happened and can
-                            retry by tapping the mic again. Suppressed when an
-                            `onError` sink is provided — the consumer renders the
-                            message outside the clipped circle instead. */}
-                        {!onError && error && (
-                            <p
-                                role="alert"
-                                className="text-xs text-destructive text-center max-w-[200px]"
-                            >
-                                {error}
-                            </p>
+                        {/* HairlineRipple — renders behind content, extends beyond dot */}
+                        {showBlob && dotSize > 0 && (
+                            <HairlineRipple
+                                analyser={analyserNode}
+                                dotSize={dotSize}
+                                reach={28}
+                                active
+                                reducedMotion={reducedMotion}
+                            />
                         )}
-                    </motion.div>
-                )}
 
-                {/* RECORDING — Stop button only (blob handles visualization) */}
-                {phase === 'recording' && (
+                        <AnimatePresence mode="wait">
+                            {/* IDLE — Mic button.
+                                Bug 4 — primary actions sized to w-20 h-20 (80px)
+                                so the central control doesn't jump as the phase
+                                changes. Was w-16 h-16 (64px); felt undersized
+                                against the cap-18rem desktop dot. */}
+                            {phase === 'idle' && (
+                                <motion.div
+                                    key="idle"
+                                    className="flex flex-col items-center gap-3"
+                                    {...phaseTransition}
+                                >
+                                    <motion.button
+                                        onClick={handleTapToRecord}
+                                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                                        {...buttonScalePrimary}
+                                        aria-label="Start recording your reply"
+                                    >
+                                        <motion.span {...micBreathing}>
+                                            <Mic className="h-9 w-9" />
+                                        </motion.span>
+                                    </motion.button>
+                                    {/* Permission / device errors land here after a
+                                        failed start. Suppressed when an `onError`
+                                        sink is provided — the consumer renders the
+                                        message outside the clipped circle instead. */}
+                                    {!onError && error && (
+                                        <p
+                                            role="alert"
+                                            className="text-xs text-destructive text-center max-w-[200px]"
+                                        >
+                                            {error}
+                                        </p>
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* RECORDING — Stop button only (blob handles visualization) */}
+                            {phase === 'recording' && (
+                                <motion.button
+                                    key="recording"
+                                    onClick={handleStop}
+                                    className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                                    {...phaseTransition}
+                                    {...buttonScaleSecondary}
+                                    aria-label="Stop recording"
+                                >
+                                    <Square className="h-7 w-7 fill-current" />
+                                </motion.button>
+                            )}
+
+                            {/* REVIEW — the dot holds ONLY the play-preview control;
+                                discard + send render as flanks outside the dot
+                                (below). No in-dot caption, so the control stays
+                                optically centered. */}
+                            {phase === 'review' && (
+                                <motion.button
+                                    key="review"
+                                    onClick={handlePlayback}
+                                    className="w-16 h-16 rounded-full border-2 border-border bg-card flex items-center justify-center shadow-sm"
+                                    {...phaseTransition}
+                                    {...buttonScaleSecondary}
+                                    aria-label={isPlayingBack ? 'Pause preview' : 'Play preview'}
+                                >
+                                    {isPlayingBack ? (
+                                        <Pause className="h-7 w-7 text-primary" />
+                                    ) : (
+                                        <Play className="h-7 w-7 text-primary ml-0.5" />
+                                    )}
+                                </motion.button>
+                            )}
+
+                            {/* AUTHENTICATING — Compact indicator */}
+                            {phase === 'authenticating' && (
+                                <motion.div
+                                    key="authenticating"
+                                    className="flex flex-col items-center gap-2"
+                                    {...phaseTransition}
+                                >
+                                    <div className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center">
+                                        <Mic className="h-5 w-5 text-primary/60" />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">Recording saved</span>
+                                </motion.div>
+                            )}
+
+                            {/* SENDING — Spinner */}
+                            {phase === 'sending' && (
+                                <motion.div
+                                    key="sending"
+                                    className="flex items-center justify-center"
+                                    {...phaseTransition}
+                                >
+                                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                                </motion.div>
+                            )}
+
+                            {/* SUCCESS — Empty placeholder (PublicPrompt shows merged dot animation) */}
+                            {phase === 'success' && (
+                                <motion.div
+                                    key="success"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 0 }}
+                                />
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </DotMark>
+            </motion.div>
+
+            {/* REVIEW flanks — discard (back, left) and send (forward, right),
+                positioned just outside the shrunken dot. Each is a direct keyed
+                child of AnimatePresence (not wrapped in a Fragment, which would
+                hide them from exit tracking). Opacity-only animation so the
+                inline positioning transform isn't clobbered by Framer. */}
+            <AnimatePresence>
+                {/* Discard (X) — left = "go back" */}
+                {isReview && dotSize > 0 && (
                     <motion.button
-                        key="recording"
-                        onClick={handleStop}
-                        className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                        {...phaseTransition}
-                        {...buttonScaleSecondary}
-                        aria-label="Stop recording"
+                        key="discard-flank"
+                        onClick={handleDiscard}
+                        className="absolute z-10 w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center shadow-sm"
+                        // Dynamic offset lives in `left` (not `transform`) so a
+                        // future transform-based animation (e.g. a hover scale)
+                        // can't clobber the positioning. `transform` stays purely
+                        // for centering: -100% anchors the button's right edge.
+                        style={{
+                            top: '50%',
+                            left: `calc(50% - ${flankOffset}px)`,
+                            transform: 'translate(-100%, -50%)',
+                        }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        aria-label="Discard recording"
                     >
-                        <Square className="h-7 w-7 fill-current" />
+                        <X className="h-5 w-5 text-muted-foreground" />
                     </motion.button>
                 )}
 
-                {/* REVIEW — Play, Submit (primary), Discard */}
-                {phase === 'review' && (
-                    <motion.div
-                        key="review"
-                        className="flex flex-col items-center gap-3"
-                        {...phaseTransition}
-                    >
-                        <div className="flex items-center gap-3">
-                            {/* Play/pause preview — secondary, w-12 h-12 (was w-10 h-10) */}
-                            <motion.button
-                                onClick={handlePlayback}
-                                className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
-                                {...buttonScaleSecondary}
-                                aria-label={isPlayingBack ? 'Pause preview' : 'Play preview'}
-                            >
-                                {isPlayingBack ? (
-                                    <Pause className="h-5 w-5 text-muted-foreground" />
-                                ) : (
-                                    <Play className="h-5 w-5 text-muted-foreground ml-0.5" />
-                                )}
-                            </motion.button>
-
-                            {/* Accept — primary action, centered, matches idle/recording size */}
-                            <motion.button
-                                onClick={handleAccept}
-                                className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
-                                {...buttonScaleSecondary}
-                                aria-label={`Send reply to ${hostName}`}
-                            >
-                                <Send className="h-8 w-8" />
-                            </motion.button>
-
-                            {/* Discard (X) — secondary, matches play preview size */}
-                            <motion.button
-                                onClick={handleDiscard}
-                                className="w-12 h-12 rounded-full border-2 border-border bg-card flex items-center justify-center"
-                                {...buttonScaleSecondary}
-                                aria-label="Discard recording"
-                            >
-                                <X className="h-5 w-5 text-muted-foreground" />
-                            </motion.button>
-                        </div>
-
-                        {!onError && error && (
-                            <p className="text-xs text-destructive text-center max-w-[180px]">
-                                {error}
-                            </p>
-                        )}
-                    </motion.div>
-                )}
-
-                {/* AUTHENTICATING — Compact indicator */}
-                {phase === 'authenticating' && (
-                    <motion.div
-                        key="authenticating"
-                        className="flex flex-col items-center gap-2"
-                        {...phaseTransition}
-                    >
-                        <div className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center">
-                            <Mic className="h-5 w-5 text-primary/60" />
-                        </div>
-                        <span className="text-xs text-muted-foreground">Recording saved</span>
-                    </motion.div>
-                )}
-
-                {/* SENDING — Spinner */}
-                {phase === 'sending' && (
-                    <motion.div
-                        key="sending"
-                        className="flex items-center justify-center"
-                        {...phaseTransition}
-                    >
-                        <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    </motion.div>
-                )}
-
-                {/* SUCCESS — Empty placeholder (PublicPrompt shows merged dot animation) */}
-                {phase === 'success' && (
-                    <motion.div
-                        key="success"
+                {/* Send (→) — right = "go forward". Primary action. */}
+                {isReview && dotSize > 0 && (
+                    <motion.button
+                        key="send-flank"
+                        onClick={handleAccept}
+                        className="absolute z-10 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg"
+                        // Dynamic offset in `left` (see discard button); transform
+                        // stays purely for vertical centering.
+                        style={{
+                            top: '50%',
+                            left: `calc(50% + ${flankOffset}px)`,
+                            transform: 'translate(0, -50%)',
+                        }}
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: 0 }}
-                    />
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        aria-label={`Send reply to ${hostName}`}
+                    >
+                        <Send className="h-6 w-6" />
+                    </motion.button>
                 )}
-
             </AnimatePresence>
         </div>
     );
