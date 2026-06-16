@@ -75,12 +75,28 @@ One-time setup (done in the Firebase Console):
    effect — auto-syncs to the public mirror, App Hosting
    redeploys from there).
 
-Then to deploy a build:
+Then to deploy:
 
 ```bash
-npm run build -w @vox-pop/embed
 firebase deploy --only hosting:embed
 ```
+
+That's the whole deploy. The hosting target's `predeploy` hook in
+`firebase.json` rebuilds the workspace dependencies in order before
+uploading:
+
+```
+@vox-pop/shared → @vox-pop/design-tokens → @vox-pop/embed-ui → @vox-pop/embed
+```
+
+This ordering matters: apps/embed consumes `@vox-pop/embed-ui` (and
+`@vox-pop/design-tokens`, `@vox-pop/shared`) as their **built `dist/`**,
+not their `src/`. If you `vite build` the embed app without first
+rebuilding those packages, you get stale-`dist` errors like
+`Module '"@vox-pop/embed-ui"' has no exported member 'EmbedPrompt'`
+even though the export is right there in `src`. The predeploy hook
+removes that footgun — you no longer need to remember the manual
+package builds.
 
 ## Public mirror
 
