@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-    DotMark,
-    DotPair,
-    EditorialDisplay,
-    EditorialLede,
-    EditorialMeta,
-    ListenDot,
-    ReplyDot,
-} from '@vox-pop/embed-ui';
+import { EmbedPrompt } from '@vox-pop/embed-ui';
 import type { ProfileView, PromptView } from 'shared/types/views';
 
 import { CORE_API_BASE_URL, HOST_APP_BASE_URL, getAudioProxyUrl } from './lib/config';
@@ -130,97 +122,31 @@ export function App() {
 }
 
 /**
- * Embed composition — mirrors `EmbedPublicPrompt` in
- * `apps/web/src/components/public/PublicPrompt.tsx` so the chrome-less
- * iframe renders identically across origins. Both apps consume the
- * same composed components from `@vox-pop/embed-ui`.
+ * Embed composition — renders the shared `EmbedPrompt` from
+ * `@vox-pop/embed-ui`, the single source of the embed layout. apps/web's
+ * `?mode=embed` renders the same component, so the chrome-less iframe looks
+ * identical across origins.
  *
- * Differences vs apps/web's embed:
- *   - Anonymous flow only: `ReplyDot` is in `isEmbed` mode; `auth`,
- *     `uploader`, and `authGate` props are not supplied (and not
- *     needed — see `submitPendingEmbed`).
- *   - URLs come from build-time env (`CORE_API_BASE_URL`,
- *     `HOST_APP_BASE_URL`) rather than `APP_CONFIG.BASE_URL` because
- *     apps/embed is cross-origin from both.
- *   - No `TwoDotsAuthProvider` wrapper — `ReplyDot` in embed mode
- *     short-circuits before `useTwoDotsAuth()` is called.
+ * The only apps/embed-specific concerns are the origins (build-time env
+ * rather than `APP_CONFIG`, because apps/embed is cross-origin from both) and
+ * the audio-proxy resolution.
  */
 function EmbedView({ user, prompt }: { user: ProfileView; prompt: PromptView }) {
-    // Recording / upload errors surface here, below the dots — the ReplyDot
-    // lives inside a round `overflow-hidden` DotMark that clips wide captions,
-    // so the status text can't live inside the circle.
-    const [replyError, setReplyError] = useState<string | null>(null);
-
     return (
-        <div className="theme-editorial relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-background px-4 py-3 text-foreground">
-            <div className="w-full max-w-md">
-                {/* Dot size MUST match apps/web's EmbedPublicPrompt
-                    (apps/web/src/components/public/PublicPrompt.tsx) — both
-                    render the same prompt's dots, so a mismatch makes the same
-                    prompt look a different size depending on which surface
-                    serves the iframe. */}
-                <DotPair
-                    listen={
-                        <DotMark
-                            variant="filled"
-                            tone="primary"
-                            className="size-[clamp(9rem,32vmin,13rem)]"
-                        >
-                            {prompt.record.audioUrl ? (
-                                <ListenDot
-                                    audioUrl={getAudioProxyUrl(prompt.record.audioUrl)}
-                                    peaks={prompt.record.waveformPeaks}
-                                />
-                            ) : (
-                                <div className="px-3 text-center text-xs text-ink-muted">
-                                    Text-only prompt
-                                </div>
-                            )}
-                        </DotMark>
-                    }
-                    reply={
-                        <DotMark
-                            variant="ring"
-                            tone="accent-warm"
-                            className="size-[clamp(9rem,32vmin,13rem)]"
-                        >
-                            <ReplyDot
-                                promptId={prompt.record.id}
-                                hostName={user.displayName || user.handle || undefined}
-                                creatorHandle={user.handle || undefined}
-                                isEmbed
-                                coreApiBaseUrl={CORE_API_BASE_URL}
-                                hostAppBaseUrl={HOST_APP_BASE_URL}
-                                onError={setReplyError}
-                            />
-                        </DotMark>
-                    }
-                    between={
-                        <div className="flex flex-col items-center gap-1 py-0.5">
-                            <EditorialMeta>@{user.handle}</EditorialMeta>
-                            <EditorialDisplay
-                                as="h1"
-                                className="text-[clamp(1rem,3.5vw+0.5rem,1.5rem)] leading-tight"
-                            >
-                                {prompt.record.title}
-                            </EditorialDisplay>
-                            {prompt.record.description && (
-                                <EditorialLede className="line-clamp-2 text-xs leading-snug md:text-sm">
-                                    {prompt.record.description}
-                                </EditorialLede>
-                            )}
-                        </div>
-                    }
-                />
-                {replyError && (
-                    <p
-                        role="alert"
-                        className="mt-3 text-center text-sm text-destructive"
-                    >
-                        {replyError}
-                    </p>
-                )}
-            </div>
-        </div>
+        <EmbedPrompt
+            promptId={prompt.record.id}
+            title={prompt.record.title}
+            description={prompt.record.description}
+            audioUrl={
+                prompt.record.audioUrl
+                    ? getAudioProxyUrl(prompt.record.audioUrl)
+                    : undefined
+            }
+            waveformPeaks={prompt.record.waveformPeaks}
+            handle={user.handle || undefined}
+            displayName={user.displayName || undefined}
+            coreApiBaseUrl={CORE_API_BASE_URL}
+            hostAppBaseUrl={HOST_APP_BASE_URL}
+        />
     );
 }
