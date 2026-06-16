@@ -2,7 +2,7 @@
   "name": "@vox-pop/embed",
   "version": "0.1.0",
   "private": true,
-  "description": "Vox Pop embed — standalone Vite + React SPA serving the chrome-less prompt iframe. Cross-origin from apps/web; hits apps/core-api directly. Deploys as static assets to Firebase Hosting at embed.phonicfactory.com.",
+  "description": "Vox Pop embed — standalone Vite + React SPA serving the chrome-less prompt iframe. Cross-origin from apps/web; hits apps/core-api directly. Deploys as static assets to Firebase Hosting at embed.voxpop.phonicfactory.com.",
   "type": "module",
   "scripts": {
     "dev": "vite",

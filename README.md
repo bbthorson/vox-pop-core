@@ -1,7 +1,7 @@
 # `@vox-pop/embed` — standalone iframe SPA
 
 Vite + React static SPA serving the chrome-less prompt iframe at
-`embed.phonicfactory.com`. Deploys to Firebase Hosting (multi-site —
+`embed.voxpop.phonicfactory.com`. Deploys to Firebase Hosting (multi-site —
 target `embed`).
 
 ## Why a separate app
@@ -67,13 +67,15 @@ One-time setup (done in the Firebase Console):
    ```
    This writes the target → site ID mapping into `.firebaserc`.
 3. **Custom domain**: in the Firebase Console for the new site,
-   add `embed.phonicfactory.com` as a custom domain. Follow the
+   add `embed.voxpop.phonicfactory.com` as a custom domain. Follow the
    DNS verification steps (TXT record + A record).
-4. **CORS**: add `https://embed.phonicfactory.com` to core-api's
-   `ALLOWED_ORIGINS` in `apps/core-api/apphosting.yaml` (already
-   done in this PR; redeploy core-api so the new origin takes
-   effect — auto-syncs to the public mirror, App Hosting
-   redeploys from there).
+4. **CORS**: add `https://embed.voxpop.phonicfactory.com` to core-api's
+   `ALLOWED_ORIGINS`. ⚠️ This lives in the **mirror's root
+   `apphosting.yaml`** (`bbthorson/vox-pop-core`), NOT
+   `apps/core-api/apphosting.yaml` in this repo — that file is dead
+   config (see `docs/tech-debt.md` #5). Editing the wrong one silently
+   does nothing. (`embed.voxpop.phonicfactory.com` is already in the
+   deployed allowlist as of 2026-06-16.)
 
 Then to deploy:
 
