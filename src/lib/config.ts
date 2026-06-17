@@ -39,12 +39,12 @@ export const HOST_APP_BASE_URL: string = stripTrailingSlash(
  * Wraps a raw Firebase Storage URL through the core-api audio proxy
  * (`GET /api/v1/audio?url=...`), which 302s to a short-lived signed
  * URL. Pairs with apps/web's `getAudioProxyUrl` in
- * `apps/web/src/config/dashboard.ts` and apps/mobile's helper.
+ * `apps/web/src/config/dashboard.ts`.
  *
  * Idempotent — passing an already-proxied URL returns it unchanged.
  * Defends against future call-site bugs where a proxy URL gets passed
- * back through. (Caught one such bug in apps/mobile's `handleShareAudio`
- * during the Phase 2 rollout — the helper guards against the next one.)
+ * back through (we hit one such double-wrapping bug during the Phase 2
+ * rollout — the helper guards against the next one).
  *
  * Phase 2 of `specs/signed-url-migration.md` — every audio playback
  * site routes through this so the eventual `storage.rules` lockdown
