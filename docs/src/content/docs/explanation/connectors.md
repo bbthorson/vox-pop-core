@@ -73,6 +73,7 @@ The hub-and-connector shape is what makes the open core *open*. Because experien
 
 - [Build your own app](/build-your-own/overview/) — the getting-started path for a new connector.
 - [Example: the embed app](/build-your-own/embed-example/) — a working egress connector you can run today.
+- [API design principles](/explanation/api-design-principles/) — the rules that keep the contract small: primitives, queries, projections, contracts.
 - [Build a reply inbox](/how-to/reply-inbox/) — a cookbook that composes the replies primitives into a full inbox.
 - [API reference](/api/overview/) — the consumer-plane contract in full.
 - [Architecture](/introduction/architecture/) — the *internal* ports-and-adapters wiring of the hub itself.
