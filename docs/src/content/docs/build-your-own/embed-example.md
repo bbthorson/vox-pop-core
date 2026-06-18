@@ -27,7 +27,7 @@ That's the entire backend contract for a read-only surface:
 
 - **No auth.** `GET /api/v1/prompts/public/{handle}/{promptId}` is public and returns a public-safe projection.
 - **Standard envelope.** Success is `{ success: true, data: { user, prompt } }`; failure is `{ success: false, error }`. The 404 case is handled explicitly (`Prompt not found.`).
-- **Typed payload.** `user` is a `ProfileView` and `prompt` a `PromptView`, both imported from `@vox-pop/shared` — the same Zod-derived types that generate the [API reference](/api/overview/).
+- **Typed payload.** `user` is a `ProfileView` and `prompt` a `PromptView`, both imported from `@vox-pop/shared` — the same Zod-derived types that generate the [API reference](/api/reference/).
 
 ## Configuration: point it at any core-api
 
@@ -43,7 +43,7 @@ Set `VITE_CORE_API_BASE_URL` to your own deployment (`https://api.example.com`) 
 
 ## Audio playback goes through the proxy
 
-Audio URLs aren't played directly — they're routed through the core-api audio proxy, which 302s to a short-lived signed URL:
+Audio URLs aren't played directly — they're routed through the core-api audio proxy ([`GET /api/v1/audio`](/api/reference/)), which 302s to a short-lived signed URL:
 
 ```ts
 export function getAudioProxyUrl(audioUrl: string): string {
@@ -94,4 +94,4 @@ Build a static bundle with `npm run build -w @vox-pop/embed` (output in `apps/em
 4. **The audio proxy helper** — wrap storage URLs, don't hot-link.
 5. *(optional)* **`@vox-pop/embed-ui`** — for a matching look, or render the typed payload yourself.
 
-That's the whole template. Everything past it — auth, prompt creation, feeds, search — is documented in the [API reference](/api/overview/).
+That's the whole template. Everything past it — auth, prompt creation, feeds, search — is documented in the [API reference](/api/reference/).
