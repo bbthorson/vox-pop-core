@@ -35,6 +35,16 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'How-to guides',
+					items: [
+						// Task-oriented recipes that orchestrate multiple
+						// endpoints. The embed walkthrough is a how-to in
+						// spirit (it composes the public fetch + render), so
+						// it anchors this section as the first recipe.
+						{ label: 'Example: the embed app', slug: 'build-your-own/embed-example' },
+					],
+				},
+				{
 					label: 'API reference',
 					items: [
 						{ label: 'Overview', slug: 'api/overview' },
