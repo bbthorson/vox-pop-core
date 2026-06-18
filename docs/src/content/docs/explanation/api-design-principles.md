@@ -27,7 +27,7 @@ A resource has one canonical record and **distinct projections** for who's askin
 
 The [API reference](/api/reference/) is *generated* from the Zod request/response schemas and route descriptions in `apps/core-api` — there's no hand-maintained copy that can drift. That makes a route's `description` a **contract**, not a comment: if the code enforces ownership, the description says so; if a field is nullable, the schema says so. A description that disagrees with the implementation is a bug, because it ships verbatim to every reader of the reference.
 
-So when you change a route's behavior, change its schema and description in the same commit, and regenerate the spec. The reference is only as trustworthy as the descriptions it's built from.
+So when you change a route's behavior, change its schema and description in the same commit, and regenerate the spec (`npm run gen:openapi -w @vox-pop/core-api`). The reference is only as trustworthy as the descriptions it's built from.
 
 ## Why it's worth the discipline
 
