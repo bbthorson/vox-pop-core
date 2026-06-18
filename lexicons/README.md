@@ -16,7 +16,7 @@ The pure record-to-lexicon transformation lives in [`packages/core/services/atpr
 
 Future lexicons under consideration:
 
-- **`com.voxpop.people.contact`** + `com.voxpop.people.*` RPC namespace — for the eventual `apps/identity/` contact-directory surface. Prior-art survey and proposed shape in [`specs/people-lexicon-prior-art.md`](../specs/people-lexicon-prior-art.md). Not yet authored; gated on `apps/identity/` actually being on the roadmap.
+- **`com.voxpop.people.contact`** + `com.voxpop.people.*` RPC namespace — for the eventual `apps/relationships/` contact-directory surface. Prior-art survey and proposed shape in [`specs/people-lexicon-prior-art.md`](../specs/people-lexicon-prior-art.md). Not yet authored; gated on `apps/relationships/` actually being on the roadmap.
 
 ## 1. com.voxpop.audio.prompt
 
