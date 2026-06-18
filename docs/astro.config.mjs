@@ -59,6 +59,11 @@ export default defineConfig({
 						// planes. Distinct from introduction/architecture
 						// (which is the internal ports-and-adapters wiring).
 						{ label: 'Architecture & connectors', slug: 'explanation/connectors' },
+						// The design rules the consumer API obeys (primitives not
+						// compositions, queries, projections, descriptions as
+						// contracts). The contributor-facing counterpart to the
+						// connector model — what belongs in core vs a connector.
+						{ label: 'API design principles', slug: 'explanation/api-design-principles' },
 					],
 				},
 				{
