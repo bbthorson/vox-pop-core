@@ -47,6 +47,16 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Explanation',
+					items: [
+						// The mental model: the core as a hub, every surface
+						// around it as a directional connector, the three API
+						// planes. Distinct from introduction/architecture
+						// (which is the internal ports-and-adapters wiring).
+						{ label: 'Architecture & connectors', slug: 'explanation/connectors' },
+					],
+				},
+				{
 					label: 'API reference',
 					items: [
 						{ label: 'Overview', slug: 'api/overview' },
