@@ -50,9 +50,9 @@ Connectors don't all knock on the same door. The hub exposes **three planes**, e
 |---|---|---|---|
 | **Consumer API** | `/api/v1/*` | Apps built on the core — yours, the dashboard, mobile. | Bearer token (or anonymous for public projections). |
 | **Ingestion** | `system/*` | Ingress connectors writing on behalf of a captured event. | System-to-system, not end-user tokens. |
-| **Control** | connector config | A management UI configuring a connector's settings. | The owning user. |
+| **Control** | `/api/v1/connectors/*` | A management UI configuring a connector's settings. | The owning user. |
 
-The **consumer API is the one this site documents** — it's the contract in the [reference](/api/overview/), the front door for anyone building an app. The ingestion and control planes exist for connector *authors* (the people writing an ingress bridge or a settings UI), and the privileged surfaces among them stay out of the public reference by design — they're either system-to-system plumbing or owner-scoped configuration, not something a third-party client calls directly.
+The **consumer and control planes are both documented** — both live under `/api/v1/*` and appear in the [reference](/api/overview/). The consumer API is the front door for any app built on the core; the control plane (`/api/v1/connectors/*`) lets a connector's owner read and write its settings through a uniform contract. The **ingestion plane is the exception**: `system/*` is system-to-system plumbing an ingress connector uses to write on behalf of a captured event, so it stays out of the public reference by design — it isn't something a third-party client calls with an end-user token.
 
 The split is the point: a captured voicemail becoming a reply is a fundamentally different operation from a logged-in user fetching their feed, so it lives on a different plane with a different trust model. Keeping them separate is what lets the consumer contract stay small and stable.
 
