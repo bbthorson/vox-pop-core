@@ -30,8 +30,10 @@ export default defineConfig({
 				{
 					label: 'Build your own',
 					items: [
+						// Conceptual hub. The embed walkthrough now lives under
+						// How-to guides (it's a task-oriented recipe); this page
+						// cross-links to it in prose, so it isn't orphaned.
 						{ label: 'Build your own app', slug: 'build-your-own/overview' },
-						{ label: 'Example: the embed app', slug: 'build-your-own/embed-example' },
 					],
 				},
 				{
