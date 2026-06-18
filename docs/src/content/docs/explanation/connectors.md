@@ -23,7 +23,7 @@ Vox Pop Core doesn't have a UI. It isn't an app. It's a **hub**: a single source
 
 The hosted product at [voxpop.com](https://voxpop.com) is **one** connector — the reference one. This repo ships a second you can read end to end: [`apps/embed`](/build-your-own/embed-example/). Your surface is just one more arrow into the same hub.
 
-This is the single rule that explains the API: **the core ships primitives, and connectors compose experiences from them.** An "inbox," an "onboarding flow," a "dashboard" — those are compositions a connector assembles; they are deliberately *not* endpoints. A reply "inbox," for instance, is something you build from the replies primitives (feed, read-state, notes, status, search) — there is no `GET /inbox`.
+This is the single rule that explains the API: **the core ships primitives, and connectors compose experiences from them.** An "inbox," an "onboarding flow," a "dashboard" — those are compositions a connector assembles; they are deliberately *not* endpoints. A reply "inbox," for instance, is something you [build from the replies primitives](/how-to/reply-inbox/) (feed, read-state, notes, status, search) — there is no `GET /inbox`.
 
 ## Connectors are directional
 
@@ -73,6 +73,7 @@ The hub-and-connector shape is what makes the open core *open*. Because experien
 
 - [Build your own app](/build-your-own/overview/) — the getting-started path for a new connector.
 - [Example: the embed app](/build-your-own/embed-example/) — a working egress connector you can run today.
+- [Build a reply inbox](/how-to/reply-inbox/) — a cookbook that composes the replies primitives into a full inbox.
 - [API reference](/api/overview/) — the consumer-plane contract in full.
 - [Architecture](/introduction/architecture/) — the *internal* ports-and-adapters wiring of the hub itself.
 </content>

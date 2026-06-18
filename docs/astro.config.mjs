@@ -44,6 +44,11 @@ export default defineConfig({
 						// spirit (it composes the public fetch + render), so
 						// it anchors this section as the first recipe.
 						{ label: 'Example: the embed app', slug: 'build-your-own/embed-example' },
+						// The canonical cookbook: composes the replies
+						// primitives (feed/read/status/notes/search) into an
+						// inbox — the worked proof that "inbox" is composed
+						// UX, not an endpoint.
+						{ label: 'Build a reply inbox', slug: 'how-to/reply-inbox' },
 					],
 				},
 				{
