@@ -47,8 +47,8 @@ async function api(path: string, token: string, init: RequestInit = {}) {
 
 ```ts
 // One page. data === { items: ReplyView[], nextCursor: string | null }
-async function fetchPage(token: string, cursor?: string) {
-    const qs = new URLSearchParams({ limit: '20', readStatus: 'unread' });
+async function fetchPage(token: string, cursor?: string, readStatus = 'all') {
+    const qs = new URLSearchParams({ limit: '20', readStatus });
     if (cursor) qs.set('cursor', cursor);
     return api(`/replies/feed?${qs}`, token);
 }
@@ -109,7 +109,7 @@ await api('/replies/bulk-action', token, {
 });
 ```
 
-`markRead` via bulk is idempotent and unowned (same rule as step 2); the status actions require ownership of each reply's parent prompt.
+Unlike the single-reply endpoint in step 2, **every** bulk action — `markRead` included — requires you to own each reply's parent prompt (you get a `403` otherwise); `markRead` is still idempotent.
 
 ## 4. Add private notes (the CRM layer)
 
@@ -146,5 +146,3 @@ A list, an unread loop, triage (single and bulk), private notes, and search — 
 - [Architecture & connectors](/explanation/connectors/) — why the core ships primitives and you compose the experience.
 - [Example: the embed app](/build-your-own/embed-example/) — a minimal read-only connector, end to end.
 - [API reference](/api/reference/) — the full per-endpoint contract for everything above.
-</content>
-</invoke>

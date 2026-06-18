@@ -76,5 +76,3 @@ The hub-and-connector shape is what makes the open core *open*. Because experien
 - [Build a reply inbox](/how-to/reply-inbox/) — a cookbook that composes the replies primitives into a full inbox.
 - [API reference](/api/overview/) — the consumer-plane contract in full.
 - [Architecture](/introduction/architecture/) — the *internal* ports-and-adapters wiring of the hub itself.
-</content>
-</invoke>
