@@ -13,10 +13,14 @@ name: Deploy Docs
 # copies it into the Scalar API reference at build time, so a surface change
 # should refresh the published reference too.
 #
-# One-time setup: this repo needs the FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE
-# secret (a service account JSON with Firebase Hosting deploy permission on
-# the vox-pop-simple project) — the same secret the private repo's
-# deploy-rules.yml uses.
+# Auth: the FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE secret holds the JSON key
+# for the dedicated `github-deployer@vox-pop-simple.iam.gserviceaccount.com`
+# service account (roles/firebasehosting.admin only). `google-github-actions/
+# auth` writes it to a temp file and exports GOOGLE_APPLICATION_CREDENTIALS,
+# which the Firebase CLI then picks up as ADC — the same proven pattern as
+# the private repo's post-deploy-smoke.yml. (Do NOT pass the JSON as a bare
+# env var on `firebase deploy`; the CLI doesn't read FIREBASE_SERVICE_ACCOUNT_*
+# — it reads GOOGLE_APPLICATION_CREDENTIALS, a file path.)
 
 on:
   push:
@@ -45,10 +49,15 @@ jobs:
           npm ci
           npm run build
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE }}
+
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
       - name: Deploy Docs
+        # Authenticates via ADC (GOOGLE_APPLICATION_CREDENTIALS exported by the
+        # auth step above) — no FIREBASE_TOKEN / no env-var key.
         run: firebase deploy --only hosting:docs --project vox-pop-simple
-        env:
-          FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE }}
