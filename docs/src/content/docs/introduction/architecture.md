@@ -3,7 +3,9 @@ title: Architecture
 description: How Vox Pop Core is wired internally.
 ---
 
-Vox Pop Core is a ports-and-adapters (hexagonal) service. HTTP comes in through inbound adapters, business logic lives in services that depend only on small interfaces, and a composition root wires concrete Firebase-backed implementations of those interfaces. The point of the shape: **you can swap the backend without touching the routes or the logic.**
+Vox Pop Core is a ports-and-adapters (hexagonal) service. HTTP comes in through inbound adapters, business logic lives in services that depend only on small interfaces, and a composition root wires concrete implementations of those interfaces. The point of the shape: **the backend is a swap point, not a hard dependency.**
+
+Firebase (Firestore, Firebase Auth, Cloud Storage) is the only backend implemented today, so the shipped composition root is Firebase-backed. Keeping that behind adapter interfaces is deliberate — **generalizing the core so it isn't tied to Firebase is active work**, and this layering is what makes that tractable.
 
 ## The 30-second version
 

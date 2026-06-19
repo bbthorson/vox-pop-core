@@ -3,7 +3,7 @@ title: Build your own app
 description: What the open core gives you, and how to build your own surface on top of it.
 ---
 
-Vox Pop Core is the engine, not the app. The hosted product at [voxpop.com](https://voxpop.com) is one consumer of it; this repo ships another (`apps/embed`). Nothing stops you from building a third — a mobile client, a custom embed, a Slack bot, a static site that lists a creator's prompts.
+Vox Pop Core is the infrastructure, not the app. It gives you the call-and-response building blocks — prompts, replies, identity, audio — and you build the experience. [voxpop.com](https://voxpop.com) is one app built on it; this repo ships another (`apps/embed`). Nothing stops you from building a third — a mobile client, a custom embed, a Slack bot, a static site that lists a creator's prompts, a call-in voicemail wall.
 
 This page covers **what the core gives you** and the **getting-started path** for building against it. For a worked example, see the [embed walkthrough](/build-your-own/embed-example/).
 
@@ -23,9 +23,9 @@ This page covers **what the core gives you** and the **getting-started path** fo
 Some capabilities are split: the open core ships the **lexicon definitions and the pure transform**, while the PDS I/O and OAuth client (the publishing side of AT Proto) live in the hosted layer. The lexicons README documents the seam.
 :::
 
-## apps/web is an example, not the only one
+## Start from the example app you can actually run
 
-The issue this site was built around frames the hosted Next.js app (`apps/web`, closed-source) as the reference consumer. The example you can actually open and run lives **right here in this repo**: `apps/embed`, a ~50KB Vite + React SPA that fetches one public prompt and renders it. It depends on nothing the hosted product has that you don't — same public endpoint, same `@vox-pop/embed-ui` components.
+voxpop.com's hosted web app is the largest consumer of the core, but it's closed-source — so the example to learn from lives **right here in this repo**: `apps/embed`, a ~50KB Vite + React SPA that fetches one public prompt and renders it. It depends on nothing a hosted product has that you don't — same public endpoint, same `@vox-pop/embed-ui` components.
 
 If you can build `apps/embed`, you can build your own surface. The [embed walkthrough](/build-your-own/embed-example/) reads it top to bottom.
 

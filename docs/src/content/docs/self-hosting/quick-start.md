@@ -5,6 +5,10 @@ description: Run Vox Pop Core locally against the Firebase emulators.
 
 This guide gets you from a fresh clone to a running `/api/v1/*` service against the Firebase emulators in about 5 minutes.
 
+:::note
+Firebase is the backend the core ships with today, so self-hosting currently means running against Firebase (or its emulators). Generalizing the core to support other backends is in progress; for now these steps assume Firebase.
+:::
+
 ## Prerequisites
 
 - **Node.js 22+**

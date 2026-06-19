@@ -5,6 +5,8 @@ description: Environment variables and deploy targets for Vox Pop Core.
 
 `apps/core-api` is a plain Node service configured entirely through environment variables. This page covers the full set, the emulator overrides, and the deploy targets.
 
+Most of the variables below are Firebase credentials, because Firebase is the backend the core wires up today. As the backend is generalized, this set will grow to cover other providers; for now it reflects the Firebase-backed composition root.
+
 ## Core variables
 
 | Variable | Purpose |
