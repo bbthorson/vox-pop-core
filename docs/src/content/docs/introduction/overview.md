@@ -41,4 +41,4 @@ These live in the closed-source layer that runs at `voxpop.com`, one of the apps
 - Want to run it locally? [Quick start](/self-hosting/quick-start/).
 - Building your own surface on the core? [Build your own app](/build-your-own/overview/).
 - Building against the API? [API reference](/api/overview/).
-- Looking for the **end-user** side (how people record prompts and manage replies in a real app built on the core)? See voxpop.com's [help center](https://voxpop.app/help) at voxpop.app.
+- Looking for the **end-user** side (how people record prompts and manage replies in a real app built on the core)? See the [Vox Pop help center](https://voxpop.app/help).

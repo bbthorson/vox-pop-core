@@ -25,7 +25,7 @@ Some capabilities are split: the open core ships the **lexicon definitions and t
 
 ## Start from the example app you can actually run
 
-voxpop.com's hosted web app is the largest consumer of the core, but it's closed-source — so the example to learn from lives **right here in this repo**: `apps/embed`, a ~50KB Vite + React SPA that fetches one public prompt and renders it. It depends on nothing a hosted product has that you don't — same public endpoint, same `@vox-pop/embed-ui` components.
+voxpop.com's hosted web app is the largest consumer of the core, but it's closed-source — so the example to learn from lives **right here in this repo**: `apps/embed`, a ~50KB Vite + React SPA that fetches one public prompt and renders it. It depends on nothing voxpop.com has that you don't — same public endpoint, same `@vox-pop/embed-ui` components.
 
 If you can build `apps/embed`, you can build your own surface. The [embed walkthrough](/build-your-own/embed-example/) reads it top to bottom.
 
