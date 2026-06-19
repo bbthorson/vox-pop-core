@@ -1,0 +1,63 @@
+name: Deploy Docs
+
+# Keeps https://vox-pop-docs.web.app in sync with the source. The docs
+# (Astro Starlight) live only in this public mirror under `docs/` and are
+# NOT a synced subtree, so they are authored and deployed from here.
+#
+# Before this workflow, docs only updated on a manual `npm run deploy`, so
+# the live site could drift behind `docs/`. This deploys on every push to
+# master that touches the docs (or the API surface the reference embeds).
+#
+# Path-filtered like deploy-rules.yml so unrelated pushes don't redeploy.
+# Note `apps/core-api/openapi.json` is included: `docs/scripts/copy-openapi.mjs`
+# copies it into the Scalar API reference at build time, so a surface change
+# should refresh the published reference too.
+#
+# Auth: the FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE secret holds the JSON key
+# for the dedicated `github-deployer@vox-pop-simple.iam.gserviceaccount.com`
+# service account (roles/firebasehosting.admin only). `google-github-actions/
+# auth` writes it to a temp file and exports GOOGLE_APPLICATION_CREDENTIALS,
+# which the Firebase CLI then picks up as ADC — the same proven pattern as
+# the private repo's post-deploy-smoke.yml. (Do NOT pass the JSON as a bare
+# env var on `firebase deploy`; the CLI doesn't read FIREBASE_SERVICE_ACCOUNT_*
+# — it reads GOOGLE_APPLICATION_CREDENTIALS, a file path.)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'apps/core-api/openapi.json'
+      - '.github/workflows/deploy-docs.yml'
+
+jobs:
+  deploy_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Build docs
+        working-directory: docs
+        run: |
+          npm ci
+          npm run build
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_VOX_POP_SIMPLE }}
+
+      - name: Install Firebase Tools
+        run: npm install -g firebase-tools
+
+      - name: Deploy Docs
+        # Authenticates via ADC (GOOGLE_APPLICATION_CREDENTIALS exported by the
+        # auth step above) — no FIREBASE_TOKEN / no env-var key.
+        run: firebase deploy --only hosting:docs --project vox-pop-simple
