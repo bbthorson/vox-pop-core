@@ -9,7 +9,7 @@ This page covers the high-level shape of the surface and the auth + envelope con
 
 ## What's covered
 
-Every endpoint in the reference lives in **`apps/core-api`** — the open-core service. Apps built on the core (such as `voxpop.com`) may add their own product-specific endpoints — IVR, embed-widget, telephony, team-management — that are **not** part of this open core and **not** documented here.
+Every endpoint in the reference lives in **`apps/core-api`** — the open-core service. Apps built on the core may add their own product-specific endpoints on top; those aren't part of this open core and aren't documented here.
 
 Public scope (the four core resources):
 

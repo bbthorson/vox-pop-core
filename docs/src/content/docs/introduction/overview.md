@@ -21,13 +21,9 @@ The core is backed by **Firebase** (Firestore, Firebase Auth, Cloud Storage) tod
 
 ## What's intentionally not in the open core
 
-These are app- and product-specific features, not infrastructure, so they live outside the core:
+The core stops at the infrastructure boundary. Anything that's a product or UX decision rather than shared plumbing — how an app distributes an embed, whether it offers telephony, how it handles teams or billing, **which sign-in methods it accepts before someone can reply** — belongs to the app, not the core. The core stays unopinionated so different apps can make those calls differently.
 
-- **IVR / call-forwarding** — Twilio integration, phone-number provisioning, carrier detection.
-- **Embed widget hosting** — the iframe distribution layer for `<vox-pop-widget>`.
-- **Team and billing features** — organization-tier product extensions.
-
-These live in the closed-source layer that runs at `voxpop.com`, one of the apps built on the core. The open core itself is everything you need to run identity, prompts, replies, and the public API.
+[voxpop.com](https://voxpop.com) makes one set of those choices; another app built on the same core could make entirely different ones. The open core itself is everything you need to run identity, prompts, replies, and the public API.
 
 ## Who is this for?
 
