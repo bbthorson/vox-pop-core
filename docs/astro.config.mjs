@@ -8,7 +8,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Vox Pop Core',
-			description: 'Open-source core of Vox Pop — audio interaction infrastructure.',
+			description: 'Open-source infrastructure for audio-based call-and-response applications.',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/bbthorson/vox-pop-core' },
 			],
