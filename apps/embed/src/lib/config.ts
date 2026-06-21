@@ -27,9 +27,10 @@ export const CORE_API_BASE_URL: string = stripTrailingSlash(
 );
 
 /**
- * Origin of apps/web — where the embed redirects the top frame after
- * an anonymous upload, so OTP + reply submission complete on a
- * same-origin handler. See `ReplyDot`'s `submitPendingEmbed`.
+ * Origin of apps/public (the public capture app) — where the embed
+ * redirects the top frame after an anonymous upload, so OTP + reply
+ * submission complete on the prompt page (`/@handle/promptId`). See
+ * `ReplyDot`'s `submitPendingEmbed`.
  */
 export const HOST_APP_BASE_URL: string = stripTrailingSlash(
     env.VITE_HOST_APP_BASE_URL ?? 'http://localhost:9002',
