@@ -16,7 +16,7 @@
     "@fontsource/rubik": "^5.1.0",
     "@vox-pop/design-tokens": "*",
     "@vox-pop/embed-ui": "*",
-    "@vox-pop/shared": "*",
+    "@antiphony/shared": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
