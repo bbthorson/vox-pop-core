@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "build": "npm run build -w @vox-pop/core -w @vox-pop/shared -w @vox-pop/core-api",
+    "build": "npm run build -w packages/shared -w packages/core -w apps/core-api",
     "lint": "npm run lint --workspaces --if-present",
     "start": "node apps/core-api/dist/index.js"
   },
