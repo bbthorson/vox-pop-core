@@ -4,13 +4,27 @@ This directory holds the canonical AT Protocol lexicon JSON files for Vox Pop re
 
 These lexicons are part of the **open-core** surface — protocol definitions that self-hosters and federation peers need in order to interoperate. They are MIT-licensed (see [`LICENSE`](./LICENSE) — kept alongside the JSON so the licensing travels with any future subtree split).
 
-## Status by record type
+## Antiphony namespace (`dev.antiphony.*`) — the new canonical contract
+
+The `dev.antiphony.*` lexicons are the **Antiphony canonical data model** (`specs/antiphony-data-model.md`), authored in Stream 1. They supersede `com.voxpop.*` (below), which are **deprecated** and will be removed once `apps/web` migrates off them (Stream 4). The single biggest shape change: **prompts and replies are one `dev.antiphony.audio.post` collection** (`reply`-presence discriminates), the audio moves into a standard **`dev.antiphony.embed.audio`** embed, and the transcript becomes a **platform-enrichment record** (`dev.antiphony.audio.transcript`) lifted into the embed `#view` at read time — never stored on the post.
+
+> **"Canonical" ≠ "public."** Unlike `com.voxpop.audio.reply` (which was kept off the network entirely), replies are now first-class `dev.antiphony.audio.post` records. Because PDS/federation is deferred, these are **stored centrally**, not federated to a public firehose; reply privacy is enforced by **multi-tenant origin-app scoping + per-viewer view state**, not by omitting replies from the schema.
+
+| NSID | File | Kind | Notes |
+| :--- | :--- | :--- | :--- |
+| `dev.antiphony.audio.post` | [`dev/antiphony/audio/post.json`](./dev/antiphony/audio/post.json) | record | Single content collection. `reply` present → reply; absent → prompt. Bsky-mirrored (`text`, `embed`, `reply`, `langs`, `labels`) + optional `title`. |
+| `dev.antiphony.embed.audio` | [`dev/antiphony/embed/audio.json`](./dev/antiphony/embed/audio.json) | embed | Antiphony's audio-embed contribution. `main` = stored (blob, `durationMs`, `alt`, `waveform`); `#view` = hydrated (signed `url` + lifted `transcript`). |
+| `dev.antiphony.embed.recordWithAudio` | [`dev/antiphony/embed/recordWithAudio.json`](./dev/antiphony/embed/recordWithAudio.json) | embed | Quote a record AND attach audio (analogue of `app.bsky.embed.recordWithMedia`). |
+| `dev.antiphony.audio.transcript` | [`dev/antiphony/audio/transcript.json`](./dev/antiphony/audio/transcript.json) | record | **Platform enrichment.** Timed transcript (`segments` + optional `text`) referencing the post by StrongRef. Lifted into `embed.audio#view.transcript`. |
+| `dev.antiphony.actor.profile` | [`dev/antiphony/actor/profile.json`](./dev/antiphony/actor/profile.json) | record | Port of `com.voxpop.actor.profile`. |
+
+## Status by record type — `com.voxpop.*` (DEPRECATED, removed in Stream 4)
 
 | NSID | File | Phase | Status |
 | :--- | :--- | :--- | :--- |
-| `com.voxpop.audio.prompt` | [`com/voxpop/audio/prompt.json`](./com/voxpop/audio/prompt.json) | 4c | **Open** — published with each prompt the author opts in to share. |
-| `com.voxpop.audio.reply` | _(none)_ | **Not published** | Replies are private and never go on the network. They carry AI-enriched fields (`transcription`, `aiSummary`, `sentiment`, `engagementScore`, `aiLabels`, `energyLevel`) populated by the closed-tier `functions/`, and the product treats reply content as private regardless. The only reply-derived signal that surfaces publicly is an **aggregate count**, which is an AppView/projection concern (computed at read time), **not** a field on any published record. There is no public reply lexicon planned. |
-| `com.voxpop.actor.profile` | [`com/voxpop/actor/profile.json`](./com/voxpop/actor/profile.json) | 4c | **Open** — published once per actor at the well-known `self` rkey. |
+| `com.voxpop.audio.prompt` | [`com/voxpop/audio/prompt.json`](./com/voxpop/audio/prompt.json) | 4c | **Deprecated** — superseded by `dev.antiphony.audio.post`. Still live for Vox Pop until Stream 4. |
+| `com.voxpop.audio.reply` | _(none)_ | **Not published** | Was private/off-network. Superseded by `dev.antiphony.audio.post` (reply-kind), now a canonical-but-centralized record (see note above). |
+| `com.voxpop.actor.profile` | [`com/voxpop/actor/profile.json`](./com/voxpop/actor/profile.json) | 4c | **Deprecated** — superseded by `dev.antiphony.actor.profile`. |
 
 The pure record-to-lexicon transformation lives in [`packages/core/services/atproto-lexicon.ts`](../packages/core/services/atproto-lexicon.ts). The PDS I/O (`repo.uploadBlob`, `repo.putRecord`) lives in apps/web alongside the OAuth client — see `specs/4c-atproto-prompts.md` in the upstream private repo for the full split rationale.
 
